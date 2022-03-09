@@ -1,3 +1,4 @@
 .idea/
 __pycache__/
+country_cuisine/
 data.json

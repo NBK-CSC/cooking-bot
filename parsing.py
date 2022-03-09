@@ -7,10 +7,6 @@ URL = 'https://eda.ru'
 str_recipes = "/recepty/"
 
 
-def get_list_data(data):
-    return [c.text.strip() for c in data]
-
-
 def get_soup(url):
     response = requests.get(url)
     return BeautifulSoup(response.text, 'lxml')
@@ -48,8 +44,8 @@ def main():
     recipe_selection_categories = soup('ul', class_="select-suggest__result js-select-suggest__result")
     country = recipe_selection_categories[2]('li')
 
-    if not os.path.isdir("parce_data"):
-        os.mkdir("parce_data")
+    if not os.path.isdir("country_cuisine"):
+        os.mkdir("country_cuisine")
 
     # count=len(country)#количество кухней
     count = 10
@@ -67,14 +63,15 @@ def main():
                 print(URL + dish_url)
                 dishes.append(get_data_about_dish(URL + dish_url))
 
-            data = {
-                "country": country[index].text.strip(),
-                "dishes": dishes
-            }
-            data_dict.append(data)
+            # data = {
+            #     "country": country[index].text.strip(),
+            #     "dishes": dishes
+            # }
+            #data_dict.append(data)
 
-        with open('data.json', 'w+', encoding='utf-8') as json_file:
-            json.dump(data_dict, json_file, indent=4, ensure_ascii=False)
+            with open(f'country_cuisine\\{country[index].text.strip()}.json', 'w+', encoding='utf-8') as json_file:
+                json.dump(dishes, json_file, indent=4, ensure_ascii=False)
+            json_file.close()
 
 
     except IndexError:
