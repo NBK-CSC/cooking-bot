@@ -1,7 +1,6 @@
 import telebot
 from telebot import types
 import config
-
 bot = telebot.TeleBot(config.TOKEN, parse_mode=None)
 
 
@@ -33,20 +32,17 @@ def bot_message(message):
     if message.text == '🥘 Готовка блюд':
         markup_for_cooking_dishes = types.ReplyKeyboardMarkup(resize_keyboard=True)
 
-        item1 = types.KeyboardButton('🍽 Поиск блюда')
-        item2 = types.KeyboardButton('🗺 Кухни мира')
-        item3 = types.KeyboardButton('🍳 Категории блюд')
-        item4 = types.KeyboardButton('🧄 Поиск по ингредиентам')
-        item5 = types.KeyboardButton('🔙 Назад')
+        item1 = types.KeyboardButton('🗺 Кухни мира')
+        item2 = types.KeyboardButton('🍳 Категории блюд')
+        item3 = types.KeyboardButton('🧄 Поиск по ингредиентам')
+        item4 = types.KeyboardButton('🔙 Назад')
 
-        markup_for_cooking_dishes.add(item1, item2, item3, item4, item5)
+        markup_for_cooking_dishes.add(item1, item2, item3, item4)
 
-        bot.send_message(message.chat.id, 'Готовка блюд имеет следущие функции:\n\n\t<b>1. Поиск '
-                                          'блюда</b> 🍽\n\t\t➡\tПросто введите название блюда, которое хотите '
-                                          'найти\n\n\t<b>2. Кухни мира</b> 🗺\n\t\t➡\tТут будут представлены 10 '
+        bot.send_message(message.chat.id, 'Готовка блюд имеет следущие функции:\n\n\t<b>1. Кухни мира</b> 🗺\n\t\t➡\tТут будут представлены 10 '
                                           'популярных кухонь мира. Если не нашли нужную, то введите: \n"Страна: '
-                                          '✏ название страны ✏"\n\n\t<b>3. Категории блюд</b> 🍳\n\t\t➡\tТут вы можете '
-                                          'найти блюда по категориям. Например, завтрак\n\n\t<b>4. Поиск по '
+                                          '✏ название страны ✏"\n\n\t<b>2. Категории блюд</b> 🍳\n\t\t➡\tТут вы можете '
+                                          'найти блюда по категориям. Например, завтрак\n\n\t<b>3. Поиск по '
                                           'ингредиентам</b> 🧄\n\t\t➡\tТут вы можете ввести ингредиенты, и бот подберет '
                                           'для вас блюдо состоящее из них',
                          reply_markup=markup_for_cooking_dishes,
@@ -102,13 +98,12 @@ def bot_message(message):
     elif message.text == '🔙 Нaзад':
         markup_for_cooking_dishes = types.ReplyKeyboardMarkup(resize_keyboard=True)
 
-        item1 = types.KeyboardButton('🍽 Поиск блюда')
-        item2 = types.KeyboardButton('🗺 Кухни мира')
-        item3 = types.KeyboardButton('🍳 Категории блюд')
-        item4 = types.KeyboardButton('🧄 Поиск по ингредиентам')
-        item5 = types.KeyboardButton('🔙 Назад')
+        item1 = types.KeyboardButton('🗺 Кухни мира')
+        item2 = types.KeyboardButton('🍳 Категории блюд')
+        item3 = types.KeyboardButton('🧄 Поиск по ингредиентам')
+        item4 = types.KeyboardButton('🔙 Назад')
 
-        markup_for_cooking_dishes.add(item1, item2, item3, item4, item5)
+        markup_for_cooking_dishes.add(item1, item2, item3, item4)
 
         bot.send_message(message.chat.id, "Вы вернулись к выбору подкатегории", reply_markup=markup_for_cooking_dishes, parse_mode='html')
 
