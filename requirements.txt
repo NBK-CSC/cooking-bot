@@ -1,0 +1,4 @@
+git+https://github.com/eternnoir/pyTelegramBotAPI.git
+lxml
+requests
+beautifulsoup4
