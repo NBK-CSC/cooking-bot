@@ -1,6 +1,11 @@
 import telebot
 from telebot import types
 import config
+import os
+import json
+from pprint import pprint
+
+
 bot = telebot.TeleBot(config.TOKEN, parse_mode=None)
 
 
@@ -40,8 +45,8 @@ def bot_message(message):
         markup_for_cooking_dishes.add(item1, item2, item3, item4)
 
         bot.send_message(message.chat.id, 'Готовка блюд имеет следущие функции:\n\n\t<b>1. Кухни мира</b> 🗺\n\t\t➡\tТут будут представлены 10 '
-                                          'популярных кухонь мира. Если не нашли нужную, то введите: \n"Страна: '
-                                          '✏ название страны ✏"\n\n\t<b>2. Категории блюд</b> 🍳\n\t\t➡\tТут вы можете '
+                                          'популярных кухонь мира. Если не нашли нужную, то введите: \n"Кухня: '
+                                          '✏ Русская ✏"\n\n\t<b>2. Категории блюд</b> 🍳\n\t\t➡\tТут вы можете '
                                           'найти блюда по категориям. Например, завтрак\n\n\t<b>3. Поиск по '
                                           'ингредиентам</b> 🧄\n\t\t➡\tТут вы можете ввести ингредиенты, и бот подберет '
                                           'для вас блюдо состоящее из них',
@@ -106,6 +111,62 @@ def bot_message(message):
         markup_for_cooking_dishes.add(item1, item2, item3, item4)
 
         bot.send_message(message.chat.id, "Вы вернулись к выбору подкатегории", reply_markup=markup_for_cooking_dishes, parse_mode='html')
+
+    elif message.text[:5].lower() == 'кухня':
+        markup_dishes_of_the_selected_country_dishes = types.ReplyKeyboardMarkup(resize_keyboard=True)
+
+        country = message.text.lower()[7:]
+        country = country[0].upper() + country[1:]
+        list_of_countries = os.listdir('country_cuisine')
+
+        for country_couisine in list_of_countries:
+            if country == country_couisine[0:len(country)]:
+                with open(f'country_cuisine/{country}.json', 'r', encoding='utf-8') as f:
+                    text_json = json.load(f)
+
+                for count_of_dishes in range(len(text_json)):
+                    markup_dishes_of_the_selected_country_dishes.add(types.KeyboardButton("🍽 " + text_json[count_of_dishes]['name']))
+
+        bot.send_message(message.chat.id, 'По выбранной стране, есть следующие блюда:', reply_markup=markup_dishes_of_the_selected_country_dishes)
+
+    elif message.text[0:2] == '🍽 ':
+        dish = message.text[2:]
+        dir_name = 'country_cuisine'
+        counties = os.listdir(dir_name)
+        found_dish = False
+        text_for_cooking_instruction = ''
+        text_for_ingredients = ''
+
+        for country in counties:
+            with open(f'country_cuisine/{country}', 'r', encoding='utf-8') as f:
+                text_json = json.load(f)
+
+            for count_of_dishes in range(len(text_json)):
+                if text_json[count_of_dishes]['name'] == dish:
+                    found_dish = True
+                    ingredients = text_json[count_of_dishes]['ingredients']
+                    calories = text_json[count_of_dishes]['calories']
+                    protein = text_json[count_of_dishes]['protein']
+                    fat = text_json[count_of_dishes]['fat']
+                    carbohydrate = text_json[count_of_dishes]['carbohydrate']
+                    cooking_instruction = text_json[count_of_dishes]['cooking instructions']
+                    break
+
+            if found_dish:
+                break
+
+        for steps in cooking_instruction:
+            text_for_cooking_instruction += steps
+            text_for_cooking_instruction += '\n'
+
+        for step, ingredient in enumerate(ingredients):
+            text_for_ingredients += str(step + 1) + '. ' + ingredient[0] + ': ' + ingredient[1] + '\n'
+
+        text_about_calories = 'Энергетическая ценность на порцию:\n\t' + calories + ' ккал\n\t' + protein + ' белков\n\t' + fat + ' жиров\n\t' + carbohydrate +' углеводов\n\t'
+        bot.send_message(message.chat.id, text_for_ingredients)
+        bot.send_message(message.chat.id, text_for_cooking_instruction)
+        bot.send_message(message.chat.id, text_about_calories)
+
 
     # elif message.text == '📝 Подсчет калорий':
     #     bot.send_message(message.text.id, )
