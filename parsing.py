@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 import requests
+import re
 import json
 import os
 
@@ -37,6 +38,37 @@ def get_data_about_dish(url):
 
     return dish
 
+def parse_dishes(country):
+    count=len(country)#количество кухней
+    for index in range(44, count):
+        dishes = []
+
+        new_soup = get_soup(URL + str_recipes + country[index]["data-select-suggest-value"])
+        number_recipes = int(re.findall(r'\d+',new_soup.find('span', class_="emotion-1ad0u8b").text.strip())[0])
+
+        print(country[index].text.strip()+" кухня",f"Найдено рецептов {number_recipes}",sep="; ")
+
+        for page in range(1,number_recipes//14+2):
+            try:
+                new_soup= get_soup(URL + str_recipes + country[index]["data-select-suggest-value"]+"?page="+str(page))
+            except Exception:
+                break
+
+            name_dishes = new_soup('span', class_="emotion-1j2opmb")
+
+            for i,name_dish in enumerate(name_dishes):
+                dish_url = name_dish.findParent()["href"]
+                print(index, country[index].text.strip(), i+(page-1)*14+1, name_dish.text.strip(),sep="; ")
+                print(URL + dish_url)
+                dishes.append(get_data_about_dish(URL + dish_url))
+
+            if not len(dishes):
+                continue
+            with open(f'country_cuisine\\{country[index].text.strip()}.json', 'w+', encoding='utf-8') as json_file:
+                json.dump(dishes, json_file, indent=4, ensure_ascii=False)
+            json_file.close()
+
+
 
 def main():
     soup = get_soup(URL)
@@ -47,33 +79,8 @@ def main():
     if not os.path.isdir("country_cuisine"):
         os.mkdir("country_cuisine")
 
-    count=len(country)#количество кухней
-
-
     try:
-        data_dict = []
-        for index in range(44, count):
-            print(country[index].text.strip())
-            dishes = []
-            new_soup = get_soup(URL + str_recipes + country[index]["data-select-suggest-value"])
-            name_dishes = new_soup('span', class_="emotion-1j2opmb")
-            for name_dish in name_dishes:
-                dish_url = name_dish.findParent()["href"]
-                print(index,country[index].text.strip(),name_dish.text.strip(),sep="; ")
-                print(URL + dish_url)
-                dishes.append(get_data_about_dish(URL + dish_url))
-
-            # data = {
-            #     "country": country[index].text.strip(),
-            #     "dishes": dishes
-            # }
-            #data_dict.append(data)
-            if not len(dishes):
-                continue
-            with open(f'country_cuisine\\{country[index].text.strip()}.json', 'w+', encoding='utf-8') as json_file:
-                json.dump(dishes, json_file, indent=4, ensure_ascii=False)
-            json_file.close()
-
+        parse_dishes(country)
     except IndexError:
         print("index out of range")
 
