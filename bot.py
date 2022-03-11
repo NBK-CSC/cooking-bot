@@ -55,7 +55,7 @@ def bot_message(message):
 
         bot.send_message(message.chat.id,
                          'Готовка блюд имеет следущие функции:\n\n\t<b>1. Поиск блюда</b> 🍴\n\t\t➡\tТут вы можете '
-                         'найти любое блюдо, которое захотите. Достаточно просто написать \n\n\t<b>2. Кухни мира</b> '
+                         'найти любое блюдо, которое захотите.\n\n\t<b>2. Кухни мира</b> '
                          '🗺\n\t\t➡\tТут будут представлены 10 '
                          'популярных кухонь мира. Если не нашли нужную, то введите: \n"Кухня: '
                          '✏ Русская ✏"\n\n\t<b>3. Категории блюд</b> 🍳\n\t\t➡\tТут вы можете '
@@ -102,6 +102,9 @@ def bot_message(message):
 
         bot.send_message(message.chat.id, '8 категорий блюд 🍳', reply_markup=markup_for_categories, parse_mode='html')
 
+    elif message.text == '🍴 Поиск блюда':
+        bot.send_message(message.chat.id, 'Введите блюдо, которое хотите найти. Например: ✏ Блюдо: блины ✏ ')
+
     elif message.text == '🔙 Назад':
         markup_for_help = types.ReplyKeyboardMarkup(resize_keyboard=True)
         item1 = types.KeyboardButton('🥘 Готовка блюд')
@@ -146,15 +149,15 @@ def bot_message(message):
         bot.send_message(message.chat.id, 'По выбранной стране, есть следующие блюда:',
                          reply_markup=markup_dishes_of_the_selected_country_dishes)
 
-    elif message.text[0:2] == '🍽 ':
+    elif message.text[:2] == '🍽 ':
         dish = message.text[2:]
         dir_name = 'country_cuisine'
-        counties = os.listdir(dir_name)
+        countries = os.listdir(dir_name)
         found_dish = False
         text_for_cooking_instruction = ''
         text_for_ingredients = ''
 
-        for country in counties:
+        for country in countries:
             with open(f'country_cuisine/{country}', 'r', encoding='utf-8') as f:
                 text_json = json.load(f)
 
@@ -168,7 +171,6 @@ def bot_message(message):
                     carbohydrate = text_json[count_of_dishes]['carbohydrate']
                     cooking_instruction = text_json[count_of_dishes]['cooking instructions']
                     break
-
             if found_dish:
                 break
 
@@ -185,6 +187,25 @@ def bot_message(message):
         bot.send_message(message.chat.id, text_for_ingredients)
         bot.send_message(message.chat.id, text_for_cooking_instruction)
         bot.send_message(message.chat.id, text_about_calories)
+
+    elif message.text[:5].lower() == 'блюдо':
+        markup_for_similar_dishes = types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
+
+        dish = message.text[7:]
+        dish = dish[0].upper() + dish[1:]
+        dir_name = 'country_cuisine'
+        countries = os.listdir(dir_name)
+
+        for country in countries:
+            with open(f'country_cuisine/{country}', 'r', encoding='utf-8') as f:
+                text_json = json.load(f)
+
+            for count_of_dishes in range(len(text_json)):
+                if text_json[count_of_dishes]['name'].find(dish) != -1:
+                    markup_for_similar_dishes.add(types.KeyboardButton("🍽 " + text_json[count_of_dishes]['name']))
+
+        bot.send_message(message.chat.id, 'По запросу нашел следующие блюда:',
+                         reply_markup=markup_for_similar_dishes)
 
     elif message.text in LIST_OF_POPULAR_COUNTRIES:
         country_for_dict = message.text[3:]
@@ -208,10 +229,23 @@ def bot_message(message):
 
 
     # elif message.text == '📝 Подсчет калорий':
-    #     bot.send_message(message.text.id, )
+    #     markup_gender = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    #     markup_gender.add(types.KeyboardButton('Мужской'), types.KeyboardButton('Женский'))
+    #
+    #     msg = bot.send_message(message.chat.id, 'Для того, чтобы вычислить вашу норму калорий, мне нужны некоторые '
+    #                                       'данные.\nВаш пол:', reply_markup=markup_gender)
+    #
+    #     bot.register_next_step_handler(msg, user_weight)
 
     else:
         bot.send_message(message.chat.id, 'Извините, я вас не понимаю')
+
+
+# def user_weight(message):
+#     if message.text == "Мужской" or message.text == "Женский":
+#         msg = bot.send_message(message.chat.id, 'Впишите свой вес:')
+
+
 
 
 bot.infinity_polling()
