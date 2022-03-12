@@ -150,12 +150,12 @@ def bot_message(message):
                 with open(f'country_cuisine/{country}.json', 'r', encoding='utf-8') as f:
                     text_json = json.load(f)
 
-                for count_of_dishes in range(len(text_json)):
+                for count_of_dishes in range(len(text_json)-1):
                     top_ten += 1
-                    random_dish = random.randint(0, len(text_json))
+                    random_dish = random.randint(0, len(text_json)-1)
                     markup_dishes_of_the_selected_country_dishes.add(
                         types.KeyboardButton("🍽 " + text_json[random_dish]['name']))
-                    if top_ten > 20:
+                    if top_ten > 19:
                         break
             if find_it == True:
                 break
@@ -170,9 +170,9 @@ def bot_message(message):
         dir_name = 'country_cuisine'
         countries = os.listdir(dir_name)
         found_dish = False
-
+        print(CURRENT_COUNTRY)
         if CURRENT_COUNTRY != '':
-            with open(f'country_cuisine/{CURRENT_COUNTRY}', 'r', encoding='utf-8') as f:
+            with open(f'country_cuisine/{CURRENT_COUNTRY}.json', 'r', encoding='utf-8') as f:
                 text_json = json.load(f)
 
             for count_of_dishes in range(len(text_json)):
@@ -210,12 +210,18 @@ def bot_message(message):
         for step, ingredient in enumerate(ingredients):
             text_for_ingredients += str(step + 1) + '. ' + ingredient[0] + ': ' + ingredient[1] + '\n'
 
-        text_about_calories = 'Энергетическая ценность на порцию:\n\t' + calories + ' ккал\n\t' + protein + 'белков\n' \
+        text_about_calories = 'Энергетическая ценность на порцию:\n\t' + str(calories) + ' ккал\n\t' + str(protein) + ' белков\n' \
                                                                                                             '\t' + \
-                              fat + ' жиров\n\t' + carbohydrate + ' углеводов\n\t '
+                              str(fat) + ' жиров\n\t' + str(carbohydrate) + ' углеводов\n\t '
+
+        markup_for_help = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        item1 = types.KeyboardButton('🥘 Готовка блюд')
+        item2 = types.KeyboardButton('📝 Подсчет калорий')
+
+        markup_for_help.add(item1, item2)
         bot.send_message(message.chat.id, text_for_ingredients)
         bot.send_message(message.chat.id, text_for_cooking_instruction)
-        bot.send_message(message.chat.id, text_about_calories)
+        bot.send_message(message.chat.id, text_about_calories, reply_markup=markup_for_help)
 
 
     elif message.text in LIST_OF_POPULAR_COUNTRIES:
@@ -223,17 +229,25 @@ def bot_message(message):
         country = DICT_OF_POPULAR_COUNTRIES.get(country_for_dict)
         markup_dishes_of_the_selected_country_dishes = types.ReplyKeyboardMarkup(one_time_keyboard=True,
                                                                                  resize_keyboard=True)
-
         list_of_countries = os.listdir('country_cuisine')
-
+        top_ten = 0
+        find_it = False
+        CURRENT_COUNTRY = country
         for country_couisine in list_of_countries:
             if country == country_couisine[0:len(country)]:
+                find_it = True
                 with open(f'country_cuisine/{country}.json', 'r', encoding='utf-8') as f:
                     text_json = json.load(f)
 
-                for count_of_dishes in range(len(text_json)):
+                for count_of_dishes in range(len(text_json)-1):
+                    top_ten += 1
+                    random_dish = random.randint(0, len(text_json)-1)
                     markup_dishes_of_the_selected_country_dishes.add(
-                        types.KeyboardButton("🍽 " + text_json[count_of_dishes]['name']))
+                        types.KeyboardButton("🍽 " + text_json[random_dish]['name']))
+                    if top_ten > 19:
+                        break
+            if find_it == True:
+                break
 
         bot.send_message(message.chat.id, 'По выбранной кухне предоставляю следующие двадцать блюд:',
                          reply_markup=markup_dishes_of_the_selected_country_dishes)
@@ -251,12 +265,13 @@ def bot_message(message):
 
     else:
         markup_for_similar_dishes = types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
-
+        CURRENT_COUNTRY = ''
         dish = message.text
         dish = dish[0].upper() + dish[1:]
         dir_name = 'country_cuisine'
         countries = os.listdir(dir_name)
         find_anything = False
+        limit = 0
 
         for country in countries:
             with open(f'country_cuisine/{country}', 'r', encoding='utf-8') as f:
@@ -264,9 +279,13 @@ def bot_message(message):
 
             for count_of_dishes in range(len(text_json)):
                 if text_json[count_of_dishes]['name'].find(dish) != -1:
+                    if limit > 120:
+                        break
                     markup_for_similar_dishes.add(types.KeyboardButton("🍽 " + text_json[count_of_dishes]['name']))
                     find_anything = True
-
+                    limit += 1
+            if limit > 120:
+                break
 
         if find_anything == True:
             bot.send_message(message.chat.id, 'По запросу нашел следующие блюда:',
