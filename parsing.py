@@ -102,7 +102,7 @@ def main():
         os.mkdir("category_cuisine")
 
     try:
-        #parse_dishes(country,44, len(country),"country_cuisine")
+        parse_dishes(country,44, len(country),"country_cuisine")
         parse_dishes(category,1, len(category),"category_cuisine")
     except IndexError:
         print("index out of range")
