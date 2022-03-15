@@ -54,22 +54,22 @@ def get_dish_images(url):
 
 
 
-def parse_dishes(category, first_dish,last_dish):
+def parse_dishes(category, first_dish,last_dish,folder):
     for index in range(first_dish, last_dish if last_dish <= len(category) else len(category)):
         dishes = []
 
         new_soup = get_soup(CONST_URL + CONST_RECIPES + category[index]["data-select-suggest-value"])
         number_recipes = int(re.findall(r'\d+', new_soup.find('span', class_="emotion-1ad0u8b").text.strip())[0])
 
-        print(category[index].text.strip() + " кухня", f"Найдено рецептов {number_recipes}", sep="; ")
+        print(category[index].text.strip(), f"Найдено рецептов {number_recipes}", sep="; ")
         if not number_recipes:
             continue
         for page in range(1, number_recipes // 14 + 2):
-            try:
-                new_soup = get_soup(
-                    CONST_URL + CONST_RECIPES + category[index]["data-select-suggest-value"] + CONST_PAGE + str(page))
-            except Exception:
-                break
+            # try:
+            new_soup = get_soup(
+                CONST_URL + CONST_RECIPES + category[index]["data-select-suggest-value"] + CONST_PAGE + str(page))
+            # except Exception:
+            #     break
 
             name_dishes = new_soup('span', class_="emotion-1j2opmb")
 
@@ -78,13 +78,13 @@ def parse_dishes(category, first_dish,last_dish):
                 dishes.append(
                     {"name":name_dish.text.strip(),
                      "url":CONST_URL + dish_url})
-                # print(index, category[index].text.strip(), i + (page - 1) * 14 + 1, name_dish.text.strip(), sep="; ")
+                print(index, category[index].text.strip(), i + (page - 1) * 14 + 1, name_dish.text.strip(), sep="; ")
                 # print(CONST_URL + dish_url)
 
             #dishes.append({"name":name_dish.text.strip(),  "url": CONST_URL + name_dish.findParent()["href"]}for name_dish in name_dishes)
             # if not len(dishes):
             #     continue
-        with open(f'country_cuisine\\{category[index].text.strip()}.json', 'w+', encoding='utf-8') as json_file:
+        with open(f'{folder}\\{category[index].text.strip()}.json', 'w+', encoding='utf-8') as json_file:
             json.dump(dishes, json_file, indent=4, ensure_ascii=False)
         json_file.close()
 
@@ -94,12 +94,16 @@ def main():
 
     recipe_selection_categories = soup('ul', class_="select-suggest__result js-select-suggest__result")
     country = recipe_selection_categories[2]('li')
+    category = recipe_selection_categories[0]('li')
 
     if not os.path.isdir("country_cuisine"):
         os.mkdir("country_cuisine")
+    if not os.path.isdir("category_cuisine"):
+        os.mkdir("category_cuisine")
 
     try:
-        parse_dishes(country,44, len(country))
+        parse_dishes(country,44, len(country),"country_cuisine")
+        parse_dishes(category,1, len(category),"category_cuisine")
     except IndexError:
         print("index out of range")
 
