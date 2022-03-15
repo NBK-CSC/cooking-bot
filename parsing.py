@@ -33,7 +33,7 @@ def get_data_about_dish(url):
         "protein": soup.find('span', itemprop="proteinContent").text.strip() if soup.find('span',itemprop="proteinContent") is not None else 0,
         "fat": soup.find('span', itemprop="fatContent").text.strip() if soup.find('span',itemprop="fatContent") is not None else 0,
         "carbohydrate": soup.find('span', itemprop="carbohydrateContent").text.strip() if soup.find('span',itemprop="carbohydrateContent") is not None else 0,
-        "cooking_instructions": [str(i + 1) + '.' + c.text.strip().replace("\xa0", " ").replace("­", "") for i, c in enumerate(parse_cooking_instructions)]
+        "cooking_instructions": [c.text.strip().replace("\xa0", " ").replace("­", "") for i, c in enumerate(parse_cooking_instructions)]
     }
     return dish
 
