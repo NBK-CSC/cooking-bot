@@ -86,9 +86,8 @@ def bot_message(message):
         item8 = types.KeyboardButton('🇨🇳 Китай')
         item9 = types.KeyboardButton('🇲🇽 Мексика')
         item10 = types.KeyboardButton('🇮🇩 Индонезия')
-        item11 = types.KeyboardButton('🔙 Нaзад')
 
-        markup_for_world_kitchens.add(item1, item2, item3, item4, item5, item6, item7, item8, item9, item10, item11)
+        markup_for_world_kitchens.add(item1, item2, item3, item4, item5, item6, item7, item8, item9, item10)
 
         bot.send_message(message.chat.id, '10 популярных кухонь мира 🗺', reply_markup=markup_for_world_kitchens,
                          parse_mode='html')
@@ -104,9 +103,8 @@ def bot_message(message):
         item6 = types.KeyboardButton('🍝 Паста и пицца')
         item7 = types.KeyboardButton('🥪 Сэндвичи')
         item8 = types.KeyboardButton('🥤 Напитки')
-        item9 = types.KeyboardButton('🔙 Назад')
 
-        markup_for_categories.add(item1, item2, item3, item4, item5, item6, item7, item8, item9)
+        markup_for_categories.add(item1, item2, item3, item4, item5, item6, item7, item8)
         msg = bot.send_message(message.chat.id, '8 категорий блюд 🍳', reply_markup=markup_for_categories, parse_mode='html')
         bot.register_next_step_handler(msg, category_function)
         CURRENT_COUNTRY = ''
@@ -114,29 +112,6 @@ def bot_message(message):
     elif message.text == '🍴 Поиск блюда':
         bot.send_message(message.chat.id, 'Введите блюдо, которое хотите найти. Например: блины')
 
-    elif message.text == '🔙 Назад':
-        markup_for_help = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        item1 = types.KeyboardButton('🥘 Готовка блюд')
-        item2 = types.KeyboardButton('📝 Подсчет калорий')
-
-        markup_for_help.add(item1, item2)
-
-        bot.send_message(message.chat.id, "Вы вернулись к выбору категории", reply_markup=markup_for_help,
-                         parse_mode='html')
-
-    elif message.text == '🔙 Нaзад':
-        markup_for_cooking_dishes = types.ReplyKeyboardMarkup(resize_keyboard=True)
-
-        item1 = types.KeyboardButton('🍴 Поиск блюда')
-        item2 = types.KeyboardButton('🗺 Кухни мира')
-        item3 = types.KeyboardButton('🍳 Категории блюд')
-        item4 = types.KeyboardButton('🧄 Поиск по ингредиентам')
-        item5 = types.KeyboardButton('🔙 Назад')
-
-        markup_for_cooking_dishes.add(item1, item2, item3, item4, item5)
-
-        bot.send_message(message.chat.id, "Вы вернулись к выбору подкатегории", reply_markup=markup_for_cooking_dishes,
-                         parse_mode='html')
 
     elif message.text[:5].lower() == 'кухня':
         markup_dishes_of_the_selected_country_dishes = types.ReplyKeyboardMarkup(one_time_keyboard=True,
