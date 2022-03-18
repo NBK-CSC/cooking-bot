@@ -6,20 +6,22 @@ import config
 import os
 import json
 import parsing
-from PIL import  Image
-from urllib.request import urlopen
 
 bot = telebot.TeleBot(config.TOKEN, parse_mode=None)
 
-LIST_OF_POPULAR_COUNTRIES = ['🇹🇭 Тайланд', '🇹🇷 Турция', '🇮🇳 Индия', '🇯🇵 Япония', '🇫🇷 Франция', '🇪🇸 Испания', '🇮🇹 Италия',
+LIST_OF_POPULAR_COUNTRIES = ['🇹🇭 Тайланд', '🇹🇷 Турция', '🇮🇳 Индия', '🇯🇵 Япония', '🇫🇷 Франция', '🇪🇸 Испания',
+                             '🇮🇹 Италия',
                              '🇨🇳 Китай', '🇲🇽 Мексика', '🇮🇩 Индонезия']
 
 DICT_OF_POPULAR_COUNTRIES = {'Тайланд': 'Тайская', 'Турция': 'Турецкая', 'Индия': 'Индийская', 'Япония': 'Японская',
                              'Франция': 'Французская', 'Испания': 'Испанская', 'Италия': 'Итальянская',
                              'Китай': 'Китайская', 'Мексика': 'Мексиканская', 'Индонезия': 'Индонезийская'}
-DICT_FOR_USERS = {}
-CURRENT_COUNTRY = ''
-CURRENT_CATEGORY = ''
+LIST_OF_CATEGORIES = ['🥐 Выпечка и десерты', '🍲 Основные блюда', '🍳 Завтраки', '🥗 Салаты', '🥣 Супы',
+                      '🍝 Паста и пицца', '🥪 Сэндвичи', '🥤 Напитки']
+
+DICT_OF_USERS_CATEGORY = {}
+DICT_OF_USERS_KITCHEN = {}
+
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -47,8 +49,6 @@ def help(message):
 
 @bot.message_handler(content_types=['text'])
 def bot_message(message):
-    global CURRENT_COUNTRY
-    global CURRENT_CATEGORY
     if message.text == '🥘 Готовка блюд':
         markup_for_cooking_dishes = types.ReplyKeyboardMarkup(resize_keyboard=True)
 
@@ -85,11 +85,13 @@ def bot_message(message):
         item8 = types.KeyboardButton('🇨🇳 Китай')
         item9 = types.KeyboardButton('🇲🇽 Мексика')
         item10 = types.KeyboardButton('🇮🇩 Индонезия')
+        item11 = types.KeyboardButton('🔙 Нaзaд')
 
-        markup_for_world_kitchens.add(item1, item2, item3, item4, item5, item6, item7, item8, item9, item10)
+        markup_for_world_kitchens.add(item1, item2, item3, item4, item5, item6, item7, item8, item9, item10, item11)
 
         bot.send_message(message.chat.id, '10 популярных кухонь мира 🗺', reply_markup=markup_for_world_kitchens,
                          parse_mode='html')
+        DICT_OF_USERS_CATEGORY[str(message.chat.id)] = ''
 
     elif message.text == '🍳 Категории блюд':
         markup_for_categories = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -102,15 +104,69 @@ def bot_message(message):
         item6 = types.KeyboardButton('🍝 Паста и пицца')
         item7 = types.KeyboardButton('🥪 Сэндвичи')
         item8 = types.KeyboardButton('🥤 Напитки')
+        item9 = types.KeyboardButton('🔙 Нaзaд')
 
-        markup_for_categories.add(item1, item2, item3, item4, item5, item6, item7, item8)
-        msg = bot.send_message(message.chat.id, '8 категорий блюд 🍳', reply_markup=markup_for_categories, parse_mode='html')
-        bot.register_next_step_handler(msg, category_function)
-        CURRENT_COUNTRY = ''
+        markup_for_categories.add(item1, item2, item3, item4, item5, item6, item7, item8, item9)
+        bot.send_message(message.chat.id, '8 категорий блюд 🍳', reply_markup=markup_for_categories, parse_mode='html')
+        DICT_OF_USERS_KITCHEN[str(message.chat.id)] = ''
 
     elif message.text == '🍴 Поиск блюда':
         bot.send_message(message.chat.id, 'Введите блюдо, которое хотите найти. Например: блины')
 
+    elif message.text == '🔙 Назад':
+        markup_for_help = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        item1 = types.KeyboardButton('🥘 Готовка блюд')
+        item2 = types.KeyboardButton('📝 Подсчет калорий')
+
+        markup_for_help.add(item1, item2)
+
+        bot.send_message(message.chat.id, text='Вы вернулись к главному меню', reply_markup=markup_for_help)
+
+    elif message.text == '🔙 Нaзaд':
+        markup_for_cooking_dishes = types.ReplyKeyboardMarkup(resize_keyboard=True)
+
+        item1 = types.KeyboardButton('🍴 Поиск блюда')
+        item2 = types.KeyboardButton('🗺 Кухни мира')
+        item3 = types.KeyboardButton('🍳 Категории блюд')
+        item4 = types.KeyboardButton('🧄 Поиск по ингредиентам')
+        item5 = types.KeyboardButton('🔙 Назад')
+
+        markup_for_cooking_dishes.add(item1, item2, item3, item4, item5)
+
+        bot.send_message(message.chat.id, text='Вы вернулись к меню категорий', reply_markup=markup_for_cooking_dishes)
+
+    elif message.text in LIST_OF_CATEGORIES:
+        category = message.text[2:]
+        markup_dishes_of_the_selected_country_dishes = types.ReplyKeyboardMarkup(one_time_keyboard=True,
+                                                                                 resize_keyboard=True)
+        markup_dishes_of_the_selected_country_dishes.add(types.KeyboardButton('🔁 Обновить список блюд'))
+
+        DICT_OF_USERS_CATEGORY[str(message.chat.id)] = category
+        DICT_OF_USERS_KITCHEN[str(message.chat.id)] = ''
+        list_of_categories = os.listdir('category_cuisine')
+        top_ten = 0
+        find_it = False
+
+        for category_cuisine in list_of_categories:
+            if category == category_cuisine[0:len(category_cuisine) - 5]:
+                find_it = True
+                with open(f'category_cuisine/{category}.json', 'r', encoding='utf-8') as f:
+                    text_json = json.load(f)
+
+                for count_of_dishes in range(len(text_json) - 1):
+                    top_ten += 1
+                    random_dish = random.randint(0, len(text_json) - 1)
+                    markup_dishes_of_the_selected_country_dishes.add(
+                        types.KeyboardButton("🍽 " + text_json[random_dish]['name']))
+                    if top_ten > 19:
+                        break
+            if find_it == True:
+                break
+
+        bot.send_message(message.chat.id, 'По выбранной категории предоставляю следующие двадцать блюд:',
+                         reply_markup=markup_dishes_of_the_selected_country_dishes)
+        bot.send_message(message.chat.id, 'Если вы не нашли нужное вам блюдо, то найдите его через команду '
+                                          '" название блюда "')
 
     elif message.text[:5].lower() == 'кухня':
         markup_dishes_of_the_selected_country_dishes = types.ReplyKeyboardMarkup(one_time_keyboard=True,
@@ -119,22 +175,21 @@ def bot_message(message):
 
         country = message.text.lower()[7:]
         country = country[0].upper() + country[1:]
-        CURRENT_COUNTRY = country
+        DICT_OF_USERS_KITCHEN[str(message.chat.id)] = country
         list_of_countries = os.listdir('country_cuisine')
         top_ten = 0
         find_it = False
-        CURRENT_CATEGORY = ''
-
+        DICT_OF_USERS_CATEGORY[str(message.chat.id)] = ''
 
         for country_couisine in list_of_countries:
-            if country == country_couisine[0:len(country_couisine)-5]:
+            if country == country_couisine[0:len(country_couisine) - 5]:
                 find_it = True
                 with open(f'country_cuisine/{country}.json', 'r', encoding='utf-8') as f:
                     text_json = json.load(f)
 
-                for count_of_dishes in range(len(text_json)-1):
+                for count_of_dishes in range(len(text_json) - 1):
                     top_ten += 1
-                    random_dish = random.randint(0, len(text_json)-1)
+                    random_dish = random.randint(0, len(text_json) - 1)
                     markup_dishes_of_the_selected_country_dishes.add(
                         types.KeyboardButton("🍽 " + text_json[random_dish]['name']))
                     if top_ten > 19:
@@ -155,10 +210,9 @@ def bot_message(message):
         dir_name = 'country_cuisine'
         countries = os.listdir(dir_name)
         found_dish = False
-        print(CURRENT_COUNTRY)
-        print(CURRENT_CATEGORY)
-        if CURRENT_COUNTRY != '':
-            with open(f'country_cuisine/{CURRENT_COUNTRY}.json', 'r', encoding='utf-8') as f:
+        if DICT_OF_USERS_KITCHEN[str(message.chat.id)] != '':
+            with open(f'country_cuisine/{DICT_OF_USERS_KITCHEN.get(str(message.chat.id))}.json', 'r',
+                      encoding='utf-8') as f:
                 text_json = json.load(f)
 
             for count_of_dishes in range(len(text_json)):
@@ -166,8 +220,9 @@ def bot_message(message):
                     url = text_json[count_of_dishes]['url']
                     about_dish = parsing.get_data_about_dish(url)
                     break
-        elif CURRENT_CATEGORY != '':
-            with open(f'category_cuisine/{CURRENT_CATEGORY}.json', 'r', encoding='utf-8') as f:
+        elif DICT_OF_USERS_CATEGORY[str(message.chat.id)] != '':
+            with open(f'category_cuisine/{DICT_OF_USERS_CATEGORY.get(str(message.chat.id))}.json', 'r',
+                      encoding='utf-8') as f:
                 text_json = json.load(f)
 
             for count_of_dishes in range(len(text_json)):
@@ -207,12 +262,11 @@ def bot_message(message):
 
         text_about_calories = '<b>3. Энергетическая ценность</b> 📄\n➔\t' + str(calories) + ' ккал\n➔\t' + \
                               str(protein) + ' белков\n➔' \
-                                                                                                            '\t' + \
+                                             '\t' + \
                               str(fat) + ' жиров\n➔\t' + str(carbohydrate) + ' углеводов'
-        # print(url)
-        # url_for_photo = parsing.get_dish_images(url).get('main_images')
-        # photo = Image.open(urlopen(url_for_photo))
-
+        # dict_of_photos = parsing.get_dish_images(url)
+        # url_for_photo = next(dict_of_photos.get('gallery_images'))
+        # print(url_for_photo)
         markup_for_help = types.ReplyKeyboardMarkup(resize_keyboard=True)
         item1 = types.KeyboardButton('🥘 Готовка блюд')
         item2 = types.KeyboardButton('📝 Подсчет калорий')
@@ -220,10 +274,10 @@ def bot_message(message):
         bot.send_message(message.chat.id, text_for_ingredients, parse_mode='html')
         bot.send_message(message.chat.id, text_for_cooking_instruction, parse_mode='html')
         bot.send_message(message.chat.id, text_about_calories, parse_mode='html', reply_markup=markup_for_help)
-        CURRENT_CATEGORY = ''
-        CURRENT_COUNTRY = ''
+        DICT_OF_USERS_CATEGORY[str(message.chat.id)] = ''
+        DICT_OF_USERS_KITCHEN[str(message.chat.id)] = ''
         # if url_for_photo != 0:
-        #     bot.send_photo(message.chat.id, photo)
+        #     bot.send_photo(message.chat.id, url_for_photo)
 
 
     elif message.text in LIST_OF_POPULAR_COUNTRIES:
@@ -235,16 +289,16 @@ def bot_message(message):
         list_of_countries = os.listdir('country_cuisine')
         top_ten = 0
         find_it = False
-        CURRENT_COUNTRY = country
+        DICT_OF_USERS_KITCHEN[str(message.chat.id)] = country
         for country_couisine in list_of_countries:
-            if country == country_couisine[0:len(country_couisine)-5]:
+            if country == country_couisine[0:len(country_couisine) - 5]:
                 find_it = True
                 with open(f'country_cuisine/{country}.json', 'r', encoding='utf-8') as f:
                     text_json = json.load(f)
 
-                for count_of_dishes in range(len(text_json)-1):
+                for count_of_dishes in range(len(text_json) - 1):
                     top_ten += 1
-                    random_dish = random.randint(0, len(text_json)-1)
+                    random_dish = random.randint(0, len(text_json) - 1)
                     markup_dishes_of_the_selected_country_dishes.add(
                         types.KeyboardButton("🍽 " + text_json[random_dish]['name']))
                     if top_ten > 19:
@@ -256,20 +310,21 @@ def bot_message(message):
                          reply_markup=markup_dishes_of_the_selected_country_dishes)
         bot.send_message(message.chat.id, 'Если вы не нашли нужное вам блюдо, то найдите его через команду '
                                           '" название блюда "')
-        CURRENT_CATEGORY = ''
+        DICT_OF_USERS_CATEGORY[str(message.chat.id)] = ''
 
     elif message.text == '🔁 Обновить список блюд':
         markup_dishes_of_the_selected_country_dishes = types.ReplyKeyboardMarkup(one_time_keyboard=True,
                                                                                  resize_keyboard=True)
         markup_dishes_of_the_selected_country_dishes.add(types.KeyboardButton('🔁 Обновить список блюд'))
-        if CURRENT_COUNTRY != '':
+        if DICT_OF_USERS_KITCHEN[str(message.chat.id)] != '':
             list_of_countries = os.listdir('country_cuisine')
             top_ten = 0
             find_it = False
             for country_couisine in list_of_countries:
-                if CURRENT_COUNTRY == country_couisine[0:len(country_couisine) - 5]:
+                if DICT_OF_USERS_KITCHEN[str(message.chat.id)] == country_couisine[0:len(country_couisine) - 5]:
                     find_it = True
-                    with open(f'country_cuisine/{CURRENT_COUNTRY}.json', 'r', encoding='utf-8') as f:
+                    with open(f'country_cuisine/{DICT_OF_USERS_KITCHEN.get(str(message.chat.id))}.json', 'r',
+                              encoding='utf-8') as f:
                         text_json = json.load(f)
 
                     for count_of_dishes in range(len(text_json) - 1):
@@ -286,14 +341,15 @@ def bot_message(message):
                              reply_markup=markup_dishes_of_the_selected_country_dishes)
             bot.send_message(message.chat.id, 'Если вы не нашли нужное вам блюдо, то найдите его через команду '
                                               '" название блюда "')
-        elif CURRENT_CATEGORY != '':
+        elif DICT_OF_USERS_CATEGORY[str(message.chat.id)] != '':
             list_of_categories = os.listdir('category_cuisine')
             top_ten = 0
             find_it = False
             for categori_couisine in list_of_categories:
-                if CURRENT_CATEGORY == categori_couisine[0:len(categori_couisine) - 5]:
+                if DICT_OF_USERS_CATEGORY[str(message.chat.id)] == categori_couisine[0:len(categori_couisine) - 5]:
                     find_it = True
-                    with open(f'category_cuisine/{CURRENT_CATEGORY}.json', 'r', encoding='utf-8') as f:
+                    with open(f'category_cuisine/{DICT_OF_USERS_CATEGORY.get(str(message.chat.id))}.json', 'r',
+                              encoding='utf-8') as f:
                         text_json = json.load(f)
 
                     for count_of_dishes in range(len(text_json) - 1):
@@ -318,12 +374,11 @@ def bot_message(message):
         markup_gender.add(types.KeyboardButton('Мужской'), types.KeyboardButton('Женский'))
 
         msg = bot.send_message(message.chat.id, 'Для того, чтобы вычислить вашу норму калорий, мне нужны некоторые '
-                                          'данные.\nВаш пол:', reply_markup=markup_gender)
+                                                'данные.\nВаш пол:', reply_markup=markup_gender)
         bot.register_next_step_handler(msg, user_gender)
 
     else:
         markup_for_similar_dishes = types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
-        CURRENT_COUNTRY = ''
         dish = message.text
         dish = dish[0].upper() + dish[1:]
         dir_name = 'country_cuisine'
@@ -365,43 +420,11 @@ def user_height(message):
         print(message.text)
         bot.register_next_step_handler(msg, user_weight)
 
+
 def user_weight(message):
     msg = bot.send_message(message.chat.id, 'Молодец! Иди нахуй')
     print(message.text)
     msg
-
-def category_function(message):
-    global CURRENT_CATEGORY
-    category = message.text[2:]
-    markup_dishes_of_the_selected_country_dishes = types.ReplyKeyboardMarkup(one_time_keyboard=True,
-                                                                             resize_keyboard=True)
-    markup_dishes_of_the_selected_country_dishes.add(types.KeyboardButton('🔁 Обновить список блюд'))
-    CURRENT_CATEGORY = category
-    list_of_categories = os.listdir('category_cuisine')
-    top_ten = 0
-    find_it = False
-
-    for category_cuisine in list_of_categories:
-        if category == category_cuisine[0:len(category_cuisine) - 5]:
-            find_it = True
-            with open(f'category_cuisine/{category}.json', 'r', encoding='utf-8') as f:
-                text_json = json.load(f)
-
-            for count_of_dishes in range(len(text_json) - 1):
-                top_ten += 1
-                random_dish = random.randint(0, len(text_json) - 1)
-                markup_dishes_of_the_selected_country_dishes.add(
-                    types.KeyboardButton("🍽 " + text_json[random_dish]['name']))
-                if top_ten > 19:
-                    break
-        if find_it == True:
-            break
-
-    bot.send_message(message.chat.id, 'По выбранной категории предоставляю следующие двадцать блюд:',
-                     reply_markup=markup_dishes_of_the_selected_country_dishes)
-    bot.send_message(message.chat.id, 'Если вы не нашли нужное вам блюдо, то найдите его через команду '
-                                      '" название блюда "')
-
 
 
 bot.infinity_polling()
