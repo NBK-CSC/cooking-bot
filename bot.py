@@ -6,6 +6,10 @@ import config
 import os
 import json
 import parsing
+from datetime import datetime
+
+now = datetime.now()
+
 
 bot = telebot.TeleBot(config.TOKEN, parse_mode=None)
 
@@ -25,10 +29,13 @@ ACTIVITY_LEVELS = {'Минимальный уровень': 1.2, 'Низкий �
 dict_of_users_category = {}
 dict_of_users_kitchen = {}
 dict_of_users_param = {}
+dict_of_users_calories = {}
+dict_of_last_dish_users = {}
 
 
 @bot.message_handler(commands=['start'])
 def start(message):
+
     stic = open('stic/hello.webp', 'rb')
     bot.send_message(message.chat.id, "{0.first_name}, вас приветствует бот Шеф-Повар 👨‍🍳".format(message.from_user))
     bot.send_sticker(message.chat.id, stic)
@@ -37,6 +44,8 @@ def start(message):
 
 @bot.message_handler(commands=['help'])
 def help(message):
+    checking_for_id(message.chat.id)
+
     markup_for_help = types.ReplyKeyboardMarkup(resize_keyboard=True)
     item1 = types.KeyboardButton('🥘 Готовка блюд')
     item2 = types.KeyboardButton('📖 Дневник калорий')
@@ -174,47 +183,19 @@ def bot_message(message):
         bot.send_message(message.chat.id, 'Если вы не нашли нужное вам блюдо, то найдите его через команду '
                                           '" название блюда "')
 
-    # elif message.text[:5].lower() == 'кухня':
-    #     markup_dishes_of_the_selected_country_dishes = types.ReplyKeyboardMarkup(one_time_keyboard=True,
-    #                                                                              resize_keyboard=True)
-    #     markup_dishes_of_the_selected_country_dishes.add(types.KeyboardButton('🔁 Обновить список блюд'))
-    #
-    #     country = message.text.lower()[7:]
-    #     country = country[0].upper() + country[1:]
-    #     dict_of_users_kitchen[str(message.chat.id)] = country
-    #     list_of_countries = os.listdir('country_cuisine')
-    #     top_twenty = 0
-    #     find_it = False
-    #     dict_of_users_category[str(message.chat.id)] = ''
-    #
-    #     for country_couisine in list_of_countries:
-    #         if country == country_couisine[0:len(country_couisine) - 5]:
-    #             find_it = True
-    #             with open(f'country_cuisine/{country}.json', 'r', encoding='utf-8') as f:
-    #                 text_json = json.load(f)
-    #
-    #             for count_of_dishes in range(len(text_json) - 1):
-    #                 top_twenty += 1
-    #                 random_dish = random.randint(0, len(text_json) - 1)
-    #                 markup_dishes_of_the_selected_country_dishes.add(
-    #                     types.KeyboardButton("🍽 " + text_json[random_dish]['name']))
-    #                 if top_twenty > 19:
-    #                     break
-    #         if find_it == True:
-    #             break
-    #
-    #     if find_it == False:
-    #         bot.send_message(message.chat.id, f'Кухня по запросу "{message.text}" не найдена')
-    #     else:
-    #         bot.send_message(message.chat.id, f'По запросу "{message.text}" предоставляю следующие двадцать блюд:',
-    #                          reply_markup=markup_dishes_of_the_selected_country_dishes)
-    #         bot.send_message(message.chat.id, 'Если вы не нашли нужное вам блюдо, то найдите его через поиск блюда')
-
-
     elif message.text[:2] == '🍽 ':
+        if message.chat.id in dict_of_last_dish_users:
+            pass
+        else:
+            dict_of_last_dish_users[message.chat.id] = 0
+
+        checking_for_id(message.chat.id)
+
+
         dish = message.text[2:]
         dir_name = 'country_cuisine'
         countries = os.listdir(dir_name)
+        categories = os.listdir('category_cuisine')
         found_dish = False
         if (message.chat.id in dict_of_users_kitchen) or (message.chat.id in dict_of_users_category):
             if dict_of_users_kitchen[str(message.chat.id)] != '':
@@ -250,6 +231,19 @@ def bot_message(message):
                         break
                 if found_dish:
                     break
+            if found_dish == False:
+                for category in categories:
+                    with open(f'category_cuisine/{category}', 'r', encoding='utf-8') as f:
+                        text_json = json.load(f)
+
+                    for count_of_dishes in range(len(text_json)):
+                        if text_json[count_of_dishes]['name'] == dish:
+                            url = text_json[count_of_dishes]['url']
+                            about_dish = parsing.get_data_about_dish(url)
+                            found_dish = True
+                            break
+                    if found_dish:
+                        break
 
         ingredients = about_dish['ingredients']
         list_of_cooking_instuction = about_dish['cooking_instructions']
@@ -259,6 +253,9 @@ def bot_message(message):
         carbohydrate = about_dish['carbohydrate']
         text_for_cooking_instruction = '<b>2. Шаги приготолвения</b> 👣\n'
         text_for_ingredients = '<b>1. Ингредиенты</b> 🧂\n'
+
+
+        dict_of_last_dish_users[message.chat.id] = int(calories)
 
         for steps in list_of_cooking_instuction:
             text_for_cooking_instruction += '➔\t' + steps
@@ -271,21 +268,21 @@ def bot_message(message):
                               str(protein) + ' белков\n➔' \
                                              '\t' + \
                               str(fat) + ' жиров\n➔\t' + str(carbohydrate) + ' углеводов'
-        # dict_of_photos = parsing.get_dish_images(url)
-        # url_for_photo = next(dict_of_photos.get('gallery_images'))
-        # print(url_for_photo)
-        markup_for_help = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        item1 = types.KeyboardButton('🥘 Готовка блюд')
-        item2 = types.KeyboardButton('📖 Дневник калорий')
-        item3 = types.KeyboardButton('📝 Обновление дневника')
-        markup_for_help.add(item1, item2, item3)
+
+        # markup_for_help = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        # item1 = types.KeyboardButton('🥘 Готовка блюд')
+        # item2 = types.KeyboardButton('📖 Дневник калорий')
+        # item3 = types.KeyboardButton('📝 Обновление дневника')
+        # markup_for_help.add(item1, item2, item3)
+        markup_for_add_at_diary = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+        markup_for_add_at_diary.add(types.KeyboardButton('Добавить в дневник калорий'))
         bot.send_message(message.chat.id, text_for_ingredients, parse_mode='html')
         bot.send_message(message.chat.id, text_for_cooking_instruction, parse_mode='html')
-        bot.send_message(message.chat.id, text_about_calories, parse_mode='html', reply_markup=markup_for_help)
+        msg = bot.send_message(message.chat.id, text_about_calories, parse_mode='html', reply_markup=markup_for_add_at_diary)
+        bot.register_next_step_handler(msg, add_dish)
         dict_of_users_category[str(message.chat.id)] = ''
         dict_of_users_kitchen[str(message.chat.id)] = ''
-        # if url_for_photo != 0:
-        #     bot.send_photo(message.chat.id, url_for_photo)
+
 
 
     elif message.text in LIST_OF_POPULAR_COUNTRIES:
@@ -379,8 +376,16 @@ def bot_message(message):
 
     elif message.text == '📖 Дневник калорий':
         if message.chat.id in dict_of_users_param:
+            markup_for_add_calories = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+            markup_for_add_calories.add(types.KeyboardButton('Добавить калории'), types.KeyboardButton('Обнулить калории'))
             bot.send_message(message.chat.id, dict_of_users_param.get(message.chat.id)[5], parse_mode='html')
             bot.send_message(message.chat.id, dict_of_users_param.get(message.chat.id)[6], parse_mode='html')
+            checking_for_id(message.chat.id)
+            if dict_of_users_param.get(message.chat.id)[7] - dict_of_users_calories.get(message.chat.id).get(now.day) < 0:
+                msg = f'<b>{dict_of_users_calories.get(message.chat.id).get(now.day)} калорий</b> за сегодня вы употребили. Вы переели на <b>{abs(dict_of_users_param.get(message.chat.id)[7] - dict_of_users_calories.get(message.chat.id).get(now.day))} калорий</b>'
+            else:
+                msg = f'<b>{dict_of_users_calories.get(message.chat.id).get(now.day)} калорий</b> за сегодня вы употребили. Осталось <b>{dict_of_users_param.get(message.chat.id)[7] - dict_of_users_calories.get(message.chat.id).get(now.day)} калорий</b>'
+            bot.send_message(message.chat.id, msg, parse_mode='html', reply_markup=markup_for_add_calories)
         else:
             markup_gender = types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
             markup_gender.add(types.KeyboardButton('🙋‍♂️ Мужской'), types.KeyboardButton('🙋‍♀️ Женский'))
@@ -397,12 +402,26 @@ def bot_message(message):
                                                 'данные.\nВаш пол:', reply_markup=markup_gender)
         bot.register_next_step_handler(msg, user_gender)
 
+    elif message.text == 'Добавить калории':
+        msg = bot.send_message(message.chat.id, 'Введите количество калорий, которое вы хотите добавить в ваш дневник калорий')
+        bot.register_next_step_handler(msg, add_arbitrary_calories)
+
+    elif message.text == 'Обнулить калории':
+        markup_for_help = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        item1 = types.KeyboardButton('🥘 Готовка блюд')
+        item2 = types.KeyboardButton('📖 Дневник калорий')
+        item3 = types.KeyboardButton('📝 Обновление дневника')
+
+        markup_for_help.add(item1, item2, item3)
+
+        dict_of_users_calories[message.chat.id] = {now.day: 0}
+        bot.send_message(message.chat.id, 'Ваши калории за сегодня обнулились', reply_markup=markup_for_help)
+
     else:
         list_of_countries = os.listdir('country_cuisine')
         find_it = False
         user_input = message.text.lower()
         user_input = user_input[0].upper() + user_input[1:]
-        # dict_of_users_kitchen[str(message.chat.id)] = country
         for country_couisine in list_of_countries:
             if user_input == country_couisine[0:len(country_couisine) - 5]:
                 find_it = True
@@ -436,6 +455,7 @@ def bot_message(message):
             dish = dish[0].upper() + dish[1:]
             dir_name = 'country_cuisine'
             countries = os.listdir(dir_name)
+            categories = os.listdir('category_cuisine')
             find_anything = False
             limit = 0
 
@@ -453,6 +473,22 @@ def bot_message(message):
                 if limit > 120:
                     break
 
+            if find_anything == False:
+                for category in categories:
+                    with open(f'category_cuisine/{category}', 'r', encoding='utf-8') as f:
+                        text_json = json.load(f)
+
+                    for count_of_dishes in range(len(text_json)):
+                        if text_json[count_of_dishes]['name'].find(dish) != -1:
+                            if limit > 120:
+                                break
+                            markup_for_similar_dishes.add(
+                                types.KeyboardButton("🍽 " + text_json[count_of_dishes]['name']))
+                            find_anything = True
+                            limit += 1
+                    if limit > 120:
+                        break
+
             if find_anything == True:
                 bot.send_message(message.chat.id, 'По запросу нашел следующие блюда:',
                                  reply_markup=markup_for_similar_dishes)
@@ -468,15 +504,37 @@ def user_gender(message):
         dict_of_users_param[message.chat.id] = mass
         del mass
         bot.register_next_step_handler(msg, user_height)
+    elif message.text == "/help":
+        del dict_of_users_param[message.chat.id]
+        markup_for_help = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        item1 = types.KeyboardButton('🥘 Готовка блюд')
+        item2 = types.KeyboardButton('📖 Дневник калорий')
+        item3 = types.KeyboardButton('📝 Обновление дневника')
+
+        markup_for_help.add(item1, item2, item3)
+        bot.send_message(message.chat.id, 'Вы вернулись на главное меню', reply_markup=markup_for_help)
     else:
-        bot.send_message(message.chat.id, '❌ Некорректно введен пол')
+        msg = bot.send_message(message.chat.id, '❌ Некорректно введен пол')
+        bot.register_next_step_handler(msg, user_gender)
 
 def user_height(message):
     if message.text.isdigit():
-        if int(message.text) > 0:
+        if int(message.text) > 66 and int(message.text) < 273:
             msg = bot.send_message(message.chat.id, 'Введите свой вес')
             dict_of_users_param.get(message.chat.id).append(int(message.text))
             bot.register_next_step_handler(msg, user_weight)
+        else:
+            msg = bot.send_message(message.chat.id, '❌ Не думаю, что вы такого роста 😉\n Введите еще раз')
+            bot.register_next_step_handler(msg, user_height)
+    elif message.text == "/help":
+        del dict_of_users_param[message.chat.id]
+        markup_for_help = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        item1 = types.KeyboardButton('🥘 Готовка блюд')
+        item2 = types.KeyboardButton('📖 Дневник калорий')
+        item3 = types.KeyboardButton('📝 Обновление дневника')
+
+        markup_for_help.add(item1, item2, item3)
+        bot.send_message(message.chat.id, 'Вы вернулись на главное меню', reply_markup=markup_for_help)
     else:
         msg = bot.send_message(message.chat.id, '❌ Некорректно введен рост, введите еще раз')
         bot.register_next_step_handler(msg, user_height)
@@ -484,17 +542,29 @@ def user_height(message):
 
 def user_weight(message):
     if message.text.isdigit():
-        if int(message.text) > 0:
+        if int(message.text) > 1 and int(message.text) < 545:
             msg = bot.send_message(message.chat.id, "Введите свой возраст")
             dict_of_users_param.get(message.chat.id).append(int(message.text))
             bot.register_next_step_handler(msg, user_age)
+        else:
+            msg = bot.send_message(message.chat.id, '❌ Не думаю, что вы столько весите 😉\n Введите еще раз')
+            bot.register_next_step_handler(msg, user_weight())
+    elif message.text == "/help":
+        del dict_of_users_param[message.chat.id]
+        markup_for_help = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        item1 = types.KeyboardButton('🥘 Готовка блюд')
+        item2 = types.KeyboardButton('📖 Дневник калорий')
+        item3 = types.KeyboardButton('📝 Обновление дневника')
+
+        markup_for_help.add(item1, item2, item3)
+        bot.send_message(message.chat.id, 'Вы вернулись на главное меню', reply_markup=markup_for_help)
     else:
         msg = bot.send_message(message.chat.id, '❌ Некорректно введен вес, введите еще раз')
         bot.register_next_step_handler(msg, user_weight)
 
 def user_age(message):
     if message.text.isdigit():
-        if int(message.text) > 0:
+        if int(message.text) > 0 and int(message.text) < 100:
             markup_activity = types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
             markup_activity.add(types.KeyboardButton('Минимальный уровень'), types.KeyboardButton('Низкий уровень'),
                                 types.KeyboardButton('Средний уровень'), types.KeyboardButton('Высокий уровень'),
@@ -506,6 +576,18 @@ def user_age(message):
                                               '<b>5. Очень высокий</b>: Для предельно активных людей: тяжелая физическая работа и интенсивные тренировки/занятия спортом.', reply_markup=markup_activity, parse_mode='html')
             dict_of_users_param.get(message.chat.id).append(int(message.text))
             bot.register_next_step_handler(msg, activity_level)
+        else:
+            msg = bot.send_message(message.chat.id, '❌ Не думаю, что вам столько лет 😉\n Введите еще раз')
+            bot.register_next_step_handler(msg, user_age)
+    elif message.text == "/help":
+        del dict_of_users_param[message.chat.id]
+        markup_for_help = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        item1 = types.KeyboardButton('🥘 Готовка блюд')
+        item2 = types.KeyboardButton('📖 Дневник калорий')
+        item3 = types.KeyboardButton('📝 Обновление дневника')
+
+        markup_for_help.add(item1, item2, item3)
+        bot.send_message(message.chat.id, 'Вы вернулись на главное меню', reply_markup=markup_for_help)
     else:
         msg = bot.send_message(message.chat.id, '❌ Некорректно введен возраст, введите еще раз')
         bot.register_next_step_handler(msg, user_age)
@@ -513,6 +595,12 @@ def user_age(message):
 
 def activity_level(message):
     if message.text in ACTIVITY_LEVELS:
+        markup_for_help = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        item1 = types.KeyboardButton('🥘 Готовка блюд')
+        item2 = types.KeyboardButton('📖 Дневник калорий')
+        item3 = types.KeyboardButton('📝 Обновление дневника')
+        markup_for_help.add(item1, item2, item3)
+
         dict_of_users_param.get(message.chat.id).append(ACTIVITY_LEVELS.get(message.text))
         # dict_of_users_param.get(message.chat.id)
         print(dict_of_users_param.get(message.chat.id))
@@ -525,10 +613,73 @@ def activity_level(message):
         normal_calories_for_send = f'<b>{basal_metabolism} ккал/сутки</b>. Ваша <b>норма калорий</b> для поддержания веса с текущей физической активностью (вы не худеете и не набираете вес)'
         dict_of_users_param.get(message.chat.id).append(basal_metabolism_for_send)
         dict_of_users_param.get(message.chat.id).append(normal_calories_for_send)
+        dict_of_users_param.get(message.chat.id).append(basal_metabolism)
         bot.send_message(message.chat.id, basal_metabolism_for_send, parse_mode='html')
-        bot.send_message(message.chat.id, normal_calories_for_send, parse_mode='html')
+        bot.send_message(message.chat.id, normal_calories_for_send, parse_mode='html', reply_markup=markup_for_help)
+    elif message.text == "/help":
+        del dict_of_users_param[message.chat.id]
+        markup_for_help = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        item1 = types.KeyboardButton('🥘 Готовка блюд')
+        item2 = types.KeyboardButton('📖 Дневник калорий')
+        item3 = types.KeyboardButton('📝 Обновление дневника')
+
+        markup_for_help.add(item1, item2, item3)
+        bot.send_message(message.chat.id, 'Вы вернулись на главное меню', reply_markup=markup_for_help)
     else:
         msg = bot.send_message(message.chat.id, '❌ Некорректно введена активность, введите еще раз')
         bot.register_next_step_handler(msg, activity_level)
+
+
+def add_dish(message):
+    markup_for_help = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    item1 = types.KeyboardButton('🥘 Готовка блюд')
+    item2 = types.KeyboardButton('📖 Дневник калорий')
+    item3 = types.KeyboardButton('📝 Обновление дневника')
+
+    markup_for_help.add(item1, item2, item3)
+    if message.text == 'Добавить в дневник калорий':
+        checking_for_id(message.chat.id)
+        (dict_of_users_calories[message.chat.id])[now.day] += int(dict_of_last_dish_users[message.chat.id])
+        bot.send_message(message.chat.id, '✔ Калорийность блюда добавлена в ваш дневник калорий.', reply_markup=markup_for_help)
+    else:
+        bot.send_message(message.chat.id, '✖ Блюдо не было добавлено в ваш дневник калорий', reply_markup=markup_for_help)
+
+
+def add_arbitrary_calories(message):
+    if message.text.isdigit():
+        if int(message.text) > 0:
+            checking_for_id(message.chat.id)
+            (dict_of_users_calories[message.chat.id])[now.day] += int(message.text)
+            markup_for_help = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            item1 = types.KeyboardButton('🥘 Готовка блюд')
+            item2 = types.KeyboardButton('📖 Дневник калорий')
+            item3 = types.KeyboardButton('📝 Обновление дневника')
+
+            markup_for_help.add(item1, item2, item3)
+            bot.send_message(message.chat.id, 'Вы вернулись на главное меню', reply_markup=markup_for_help)
+        else:
+            msg = bot.send_message(message.chat.id, '✖ Введите положительное число')
+            bot.register_next_step_handler(msg, add_arbitrary_calories)
+    elif message.text == "/help":
+        del dict_of_users_param[message.chat.id]
+        markup_for_help = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+        item1 = types.KeyboardButton('🥘 Готовка блюд')
+        item2 = types.KeyboardButton('📖 Дневник калорий')
+        item3 = types.KeyboardButton('📝 Обновление дневника')
+
+        markup_for_help.add(item1, item2, item3)
+        bot.send_message(message.chat.id, 'Вы вернулись на главное меню', reply_markup=markup_for_help)
+    else:
+        msg = bot.send_message(message.chat.id, '✖ Введите целое число')
+        bot.register_next_step_handler(msg, add_arbitrary_calories)
+
+def checking_for_id(id):
+    if id in dict_of_users_calories:
+        if now.day in dict_of_users_calories[id]:
+            pass
+        else:
+            dict_of_users_calories[id] = {now.day: 0}
+    else:
+        dict_of_users_calories[id] = {now.day: 0}
 
 bot.infinity_polling()
