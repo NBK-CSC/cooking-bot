@@ -375,16 +375,25 @@ def bot_message(message):
 
 
     elif message.text == '📖 Дневник калорий':
+        if os.path.exists('users_param.json'):
+            with open('users_param.json', 'r', encoding='utf-8') as file:
+                if os.stat('users_param.json').st_size:
+                    dict_of_users_param_json = json.load(file)
+                    if str(message.chat.id) in dict_of_users_param_json:
+                        print('aaaa')
+            file.close()
         if message.chat.id in dict_of_users_param:
             markup_for_add_calories = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
             markup_for_add_calories.add(types.KeyboardButton('Добавить калории'), types.KeyboardButton('Обнулить калории'))
-            bot.send_message(message.chat.id, dict_of_users_param.get(message.chat.id)[5], parse_mode='html')
-            bot.send_message(message.chat.id, dict_of_users_param.get(message.chat.id)[6], parse_mode='html')
+            basal_metabolism_for_send = f'<b>{dict_of_users_param.get(message.chat.id)[5]} ккал/сутки</b>. Это ваш <b>базовый метаболизм</b> (основной обмен). Это калории, которые сжигаются, когда вы находитесь в покое, и энергия тратится на обеспечение процессов дыхания, кровообращения, поддержание температуры тела и т.д.'
+            normal_calories_for_send = f'<b>{dict_of_users_param.get(message.chat.id)[6]} ккал/сутки</b>. Ваша <b>норма калорий</b> для поддержания веса с текущей физической активностью (вы не худеете и не набираете вес)'
+            bot.send_message(message.chat.id, basal_metabolism_for_send, parse_mode='html')
+            bot.send_message(message.chat.id, normal_calories_for_send, parse_mode='html')
             checking_for_id(message.chat.id)
-            if dict_of_users_param.get(message.chat.id)[7] - dict_of_users_calories.get(message.chat.id).get(now.day) < 0:
-                msg = f'<b>{dict_of_users_calories.get(message.chat.id).get(now.day)} калорий</b> за сегодня вы употребили. Вы переели на <b>{abs(dict_of_users_param.get(message.chat.id)[7] - dict_of_users_calories.get(message.chat.id).get(now.day))} калорий</b>'
+            if dict_of_users_param.get(message.chat.id)[6] - dict_of_users_calories.get(message.chat.id).get(now.day) < 0:
+                msg = f'<b>{dict_of_users_calories.get(message.chat.id).get(now.day)} калорий</b> за сегодня вы употребили. Вы переели на <b>{abs(dict_of_users_param.get(message.chat.id)[6] - dict_of_users_calories.get(message.chat.id).get(now.day))} калорий</b>'
             else:
-                msg = f'<b>{dict_of_users_calories.get(message.chat.id).get(now.day)} калорий</b> за сегодня вы употребили. Осталось <b>{dict_of_users_param.get(message.chat.id)[7] - dict_of_users_calories.get(message.chat.id).get(now.day)} калорий</b>'
+                msg = f'<b>{dict_of_users_calories.get(message.chat.id).get(now.day)} калорий</b> за сегодня вы употребили. Осталось <b>{dict_of_users_param.get(message.chat.id)[6] - dict_of_users_calories.get(message.chat.id).get(now.day)} калорий</b>'
             bot.send_message(message.chat.id, msg, parse_mode='html', reply_markup=markup_for_add_calories)
         else:
             markup_gender = types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
@@ -404,6 +413,7 @@ def bot_message(message):
 
     elif message.text == 'Добавить калории':
         msg = bot.send_message(message.chat.id, 'Введите количество калорий, которое вы хотите добавить в ваш дневник калорий')
+        # TODO ДОБАВИТЬ ПРОВЕРКУ
         bot.register_next_step_handler(msg, add_arbitrary_calories)
 
     elif message.text == 'Обнулить калории':
@@ -415,7 +425,14 @@ def bot_message(message):
         markup_for_help.add(item1, item2, item3)
 
         dict_of_users_calories[message.chat.id] = {now.day: 0}
-        bot.send_message(message.chat.id, 'Ваши калории за сегодня обнулились', reply_markup=markup_for_help)
+        if message.chat.id in dict_of_users_param:
+            if dict_of_users_param.get(message.chat.id)[6] - dict_of_users_calories.get(message.chat.id).get(
+                    now.day) < 0:
+                msg = f'<b>{dict_of_users_calories.get(message.chat.id).get(now.day)} калорий</b> за сегодня вы употребили. Вы переели на <b>{abs(dict_of_users_param.get(message.chat.id)[6] - dict_of_users_calories.get(message.chat.id).get(now.day))} калорий</b>'
+            else:
+                msg = f'<b>{dict_of_users_calories.get(message.chat.id).get(now.day)} калорий</b> за сегодня вы употребили. Осталось <b>{dict_of_users_param.get(message.chat.id)[6] - dict_of_users_calories.get(message.chat.id).get(now.day)} калорий</b>'
+            bot.send_message(message.chat.id, msg, reply_markup=markup_for_help, parse_mode='html')
+            #TODO ДОБАВИТЬ ELSE
 
     else:
         list_of_countries = os.listdir('country_cuisine')
@@ -611,11 +628,19 @@ def activity_level(message):
         basal_metabolism = round(basal_metabolism)
         basal_metabolism_for_send = f'<b>{round(basal_metabolism/(dict_of_users_param.get(message.chat.id)[4]))} ккал/сутки</b>. Это ваш <b>базовый метаболизм</b> (основной обмен). Это калории, которые сжигаются, когда вы находитесь в покое, и энергия тратится на обеспечение процессов дыхания, кровообращения, поддержание температуры тела и т.д.'
         normal_calories_for_send = f'<b>{basal_metabolism} ккал/сутки</b>. Ваша <b>норма калорий</b> для поддержания веса с текущей физической активностью (вы не худеете и не набираете вес)'
-        dict_of_users_param.get(message.chat.id).append(basal_metabolism_for_send)
-        dict_of_users_param.get(message.chat.id).append(normal_calories_for_send)
+        dict_of_users_param.get(message.chat.id).append(round(basal_metabolism/(dict_of_users_param.get(message.chat.id)[4])))
         dict_of_users_param.get(message.chat.id).append(basal_metabolism)
+        checking_for_id(message.chat.id)
+        if dict_of_users_param.get(message.chat.id)[6] - dict_of_users_calories.get(message.chat.id).get(now.day) < 0:
+            msg = f'<b>{dict_of_users_calories.get(message.chat.id).get(now.day)} калорий</b> за сегодня вы употребили. Вы переели на <b>{abs(dict_of_users_param.get(message.chat.id)[6] - dict_of_users_calories.get(message.chat.id).get(now.day))} калорий</b>'
+        else:
+            msg = f'<b>{dict_of_users_calories.get(message.chat.id).get(now.day)} калорий</b> за сегодня вы употребили. Осталось <b>{dict_of_users_param.get(message.chat.id)[6] - dict_of_users_calories.get(message.chat.id).get(now.day)} калорий</b>'
+        add_paramaters_at_json(dict_of_users_param)
         bot.send_message(message.chat.id, basal_metabolism_for_send, parse_mode='html')
         bot.send_message(message.chat.id, normal_calories_for_send, parse_mode='html', reply_markup=markup_for_help)
+        bot.send_message(message.chat.id, msg, parse_mode='html')
+
+
     elif message.text == "/help":
         del dict_of_users_param[message.chat.id]
         markup_for_help = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -638,9 +663,13 @@ def add_dish(message):
 
     markup_for_help.add(item1, item2, item3)
     if message.text == 'Добавить в дневник калорий':
-        checking_for_id(message.chat.id)
-        (dict_of_users_calories[message.chat.id])[now.day] += int(dict_of_last_dish_users[message.chat.id])
-        bot.send_message(message.chat.id, '✔ Калорийность блюда добавлена в ваш дневник калорий.', reply_markup=markup_for_help)
+        if message.chat.id in dict_of_users_param:
+            checking_for_id(message.chat.id)
+            (dict_of_users_calories[message.chat.id])[now.day] += int(dict_of_last_dish_users[message.chat.id])
+            bot.send_message(message.chat.id, '✔ Калорийность блюда добавлена в ваш дневник калорий.',
+                             reply_markup=markup_for_help)
+        else:
+            bot.send_message(message.chat.id, 'Чтобы добавить калорийность блюда в дневник калорий, нужно сначала ввести параметры своего тела в дневнике калорий', reply_markup=markup_for_help)
     else:
         bot.send_message(message.chat.id, '✖ Блюдо не было добавлено в ваш дневник калорий', reply_markup=markup_for_help)
 
@@ -650,13 +679,18 @@ def add_arbitrary_calories(message):
         if int(message.text) > 0:
             checking_for_id(message.chat.id)
             (dict_of_users_calories[message.chat.id])[now.day] += int(message.text)
+            if dict_of_users_param.get(message.chat.id)[6] - dict_of_users_calories.get(message.chat.id).get(
+                    now.day) < 0:
+                msg = f'<b>{dict_of_users_calories.get(message.chat.id).get(now.day)} калорий</b> за сегодня вы употребили. Вы переели на <b>{abs(dict_of_users_param.get(message.chat.id)[6] - dict_of_users_calories.get(message.chat.id).get(now.day))} калорий</b>'
+            else:
+                msg = f'<b>{dict_of_users_calories.get(message.chat.id).get(now.day)} калорий</b> за сегодня вы употребили. Осталось <b>{dict_of_users_param.get(message.chat.id)[6] - dict_of_users_calories.get(message.chat.id).get(now.day)} калорий</b>'
             markup_for_help = types.ReplyKeyboardMarkup(resize_keyboard=True)
             item1 = types.KeyboardButton('🥘 Готовка блюд')
             item2 = types.KeyboardButton('📖 Дневник калорий')
             item3 = types.KeyboardButton('📝 Обновление дневника')
 
             markup_for_help.add(item1, item2, item3)
-            bot.send_message(message.chat.id, 'Вы вернулись на главное меню', reply_markup=markup_for_help)
+            bot.send_message(message.chat.id, msg, reply_markup=markup_for_help, parse_mode='html')
         else:
             msg = bot.send_message(message.chat.id, '✖ Введите положительное число')
             bot.register_next_step_handler(msg, add_arbitrary_calories)
@@ -681,5 +715,12 @@ def checking_for_id(id):
             dict_of_users_calories[id] = {now.day: 0}
     else:
         dict_of_users_calories[id] = {now.day: 0}
+
+def add_paramaters_at_json(dict):
+    with open('users_param.json', 'w+', encoding='utf-8') as file:
+        json.dump(dict, file, indent=4, ensure_ascii=False)
+
+    file.close
+
 
 bot.infinity_polling()
