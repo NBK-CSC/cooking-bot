@@ -1,5 +1,4 @@
 .idea/
 __pycache__/
-country_cuisine/
-category_cuisine/
-data.json
+countries_cuisine/
+categories_cuisine/
