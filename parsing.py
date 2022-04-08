@@ -25,8 +25,8 @@ async def get_data_about_dish(url, session, dishes, retry=5):
         async with session.get(url=url, headers=headers) as response:
             soup = BeautifulSoup(await response.text(), 'lxml')
             name = soup.find(class_="emotion-gl52ge").text.strip().replace("\xa0", " ")
-            cook_time = soup.find('div',class_='emotion-my9yfq')
-            servings_count = soup.find('span',class_='recipeYield')
+            cook_time = soup.find('div', class_='emotion-my9yfq')
+            servings_count = soup.find('span', itemprop='recipeYield')
             calories = soup.find('span', itemprop="calories")
             protein = soup.find('span', itemprop="proteinContent")
             fat = soup.find('span', itemprop="fatContent")
@@ -43,20 +43,19 @@ async def get_data_about_dish(url, session, dishes, retry=5):
                 "name": name,
                 "url": url,
                 "cook_time": cook_time.text.strip() if cook_time is not None else 0,
-                "servings_count": servings_count.text.strip() if servings_count is not None else 0,
+                "servings_count": int(servings_count.text.strip()) if servings_count is not None else 0,
                 "count_ingredient": len(parse_ingredients),
                 "ingredients": ingredients,
                 "calories": calories.text.strip() if calories is not None else 0,
                 "protein": protein.text.strip() if protein is not None else 0,
-                "fat":fat.text.strip() if fat is not None else 0,
+                "fat": fat.text.strip() if fat is not None else 0,
                 "carbohydrate": carbohydrate.text.strip() if carbohydrate is not None else 0,
                 "cooking_instructions": [c.text.strip().replace("\xa0", " ").replace("­", "") for c in
                                          parse_cooking_instructions]
             })
-    except Exception as e:
+    except Exception:
         time.sleep(3)
-        # if retry < 3:
-            # print(f"{current_process().name} [INFO]dish = retry:{retry} => url {url}")
+        print(f"{current_process().name} [INFO]dish = retry:{retry} => url {url}")
         if retry:
             await get_data_about_dish(url, session, dishes, retry=retry - 1)
         else:
@@ -76,9 +75,9 @@ async def parse_pages(url, page, session, dishes, retry=5):  # парсинг с
                 task = asyncio.create_task(get_data_about_dish(MAIN_URL + url_dish.findParent()["href"], session, dishes))
                 tasks.append(task)
             await asyncio.gather(*tasks)
-    except Exception as e:
+    except Exception:
         time.sleep(3)
-        # print(f"[INFO]page:{page} retry:{retry} => url {pages_url}")
+        print(f"[INFO]page:{page} retry:{retry} => url {pages_url}")
         if retry:
             await parse_pages(url, page, session, dishes, retry=retry - 1)
         return
@@ -89,12 +88,14 @@ async def parse_catalog(main_catalog, category_name, url):  # парсинг к�
     async with aiohttp.ClientSession() as session:
         response = await session.get(url=url, headers=headers)
         soup = BeautifulSoup(await response.text(), 'lxml')
-
-        dishes_count = int(re.findall(r'\d+', soup.find('span', class_="emotion-1ad0u8b").text.strip())[0])
-        pages_count = math.ceil(dishes_count / 14) + 2
+        dishes_count = soup.find('span', class_="emotion-1ad0u8b")
+        if not dishes_count:
+            print(f"КАТЕГОРИЯ: {category_name} ошибка")
+            return
+        pages_count = math.ceil(int(re.findall(r'\d+', dishes_count.text.strip())[0]) / 14) + 2
 
         limit_pages = 10
-        # start = time.time()
+        start = time.time()
         for l_pages in range(pages_count // limit_pages + 1):
             tasks = []
             for page in range(l_pages * limit_pages + 1,
@@ -103,8 +104,12 @@ async def parse_catalog(main_catalog, category_name, url):  # парсинг к�
                 tasks.append(task)
             await asyncio.gather(*tasks)
 
-        # print(f"{current_process().name} close pars. Catalog {category_name}; URL {url}; dishes {len(dishes)}",
-        #       time.time() - start, 'c')
+        if len(dishes)==0:
+            print(f"{current_process().name} NOT write. Catalog {category_name}; URL {url}; dishes {len(dishes)}",
+                  time.time() - start, 'c')
+            return
+        print(f"{current_process().name} close pars. Catalog {category_name}; URL {url}; dishes {len(dishes)}",
+               time.time() - start, 'c')
         writing_to_json(f'{main_catalog}\\{category_name}', dishes)
 
 
@@ -122,10 +127,12 @@ def create_folder(folder):
 
 def bridge_async_threading(sem, main_catalog, category_name, url):
     with sem:
-        # print(f"{current_process().name} started. URL {url}")
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(asyncio.wait([loop.create_task(parse_catalog(main_catalog,category_name, url))]))
-        loop.close()
+        print(f"{current_process().name} started. URL {url}")
+        asyncio.get_event_loop().run_until_complete(parse_catalog(main_catalog,category_name, url))
+        # loop = asyncio.get_event_loop()
+        # loop.run_until_complete(parse_catalog(main_catalog,category_name, url))
+        # #loop._default_executor.shutdown(wait=True)
+        # loop.close()
 
 
 def parse_recipe_catalogs(url):  # парсинг каталогов с блюдами
@@ -158,7 +165,7 @@ def parse_country_catalogs(url):  # парсинг каталогов с стр�
 
 
 def main():
-    parse_recipe_catalogs(MAIN_URL)
+    # parse_recipe_catalogs(MAIN_URL)
     parse_country_catalogs(MAIN_URL)
 
 
