@@ -53,12 +53,13 @@ def start(message):
     bot.send_message(message.chat.id, "{0.first_name}, вас приветствует бот Шеф-Повар 👨‍🍳".format(message.from_user))
     bot.send_sticker(message.chat.id, stic)
     bot.send_message(message.chat.id, "Для ознакомления с функционалом бота, пропишите команду /help")
+    stic.close()
 
 
 @bot.message_handler(commands=['help'])
 def help(message):
     check_users_activity(message.chat.id)
-    bot.send_message(message.chat.id, 'У бота есть две категории:\n\n\t<b>1. Готовка блюд</b> 🥘\n➔\tТут вы можете '
+    bot.send_message(message.chat.id, 'У бота есть три категории:\n\n\t<b>1. Готовка блюд</b> 🥘\n➔\tТут вы можете '
                                       'найти различные '
                                       'рецепты блюд и способы их приготовления.\n\n\t<b>2. Дневник калорий</b> '
                                       '📖\n➔\tТут вы можете узнать свою норму потребления калорий. После ввода ваших '
@@ -77,10 +78,10 @@ def bot_message(message):
                          'найти любое блюдо, которое захотите.\n\n\t<b>2. Кухни мира</b> '
                          '🗺\n➔\tТут будут представлены 10 '
                          'популярных кухонь мира. Если не нашли нужную, то введите название кухни: \nНапример: '
-                         '"Русская"\n\n\t<b>3. Категории блюд</b> 🍳\n➔\tТут вы можете '
-                         'найти блюда по категориям. Например, завтрак\n\n\t<b>4. Поиск по '
+                         '"Русская".\n\n\t<b>3. Категории блюд</b> 🍳\n➔\tТут вы можете '
+                         'найти блюда по категориям.\n\n\t<b>4. Поиск по '
                          'ингредиентам</b> 🧄\n➔\tТут вы можете ввести ингредиенты, и бот подберет '
-                         'для вас блюдо состоящее из них',
+                         'для вас блюдо состоящее из них.',
                          reply_markup=return_markup_for_cooking(),
                          parse_mode='html')
 
@@ -105,7 +106,7 @@ def bot_message(message):
         dict_of_users_ingredients[str(message.chat.id)] = []
         bot.register_next_step_handler(msg, add_ingredient)
 
-    elif message.text == '🔙 Назад':
+    elif message.text == '🔙 Назад' or message.text == '🔙 Вернуться к главному меню':
         bot.send_message(message.chat.id, text='Вы вернулись к главному меню', reply_markup=return_markup_for_help())
 
     elif message.text == '🔙 Нaзaд':
@@ -344,13 +345,16 @@ def bot_message(message):
                               str(protein) + ' белков\n➔' \
                                              '\t' + \
                               str(fat) + ' жиров\n➔\t' + str(carbohydrate) + ' углеводов'
-
+        stic = open('stic/apetit.webp', 'rb')
         markup_for_add_at_diary = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-        markup_for_add_at_diary.add(types.KeyboardButton('🔙 Вернуться к списку блюд'))
+        markup_for_add_at_diary.add(types.KeyboardButton('🔙 Вернуться к главному меню'), types.KeyboardButton('🔙 Вернуться к списку блюд'))
         bot.send_message(message.chat.id, text_for_ingredients, parse_mode='html')
         bot.send_message(message.chat.id, cook_time, parse_mode='html')
         bot.send_message(message.chat.id, text_for_cooking_instruction, parse_mode='html')
         bot.send_message(message.chat.id, text_about_calories, parse_mode='html', reply_markup=markup_for_add_at_diary)
+        bot.send_message(message.chat.id, "Приятного аппетита!")
+        bot.send_sticker(message.chat.id, stic)
+        stic.close()
         dict_of_users_category[str(message.chat.id)] = ''
         dict_of_users_kitchen[str(message.chat.id)] = ''
 
@@ -380,7 +384,6 @@ def bot_message(message):
         bot.register_next_step_handler(msg, user_gender)
 
     else:
-        #TODO Сделать нормальный рандом блюд
         list_of_countries = os.listdir('countries_cuisine')
         find_it = False
         user_input = message.text.lower()
@@ -425,7 +428,7 @@ def bot_message(message):
             countries = os.listdir(dir_name)
             categories = os.listdir('categories_cuisine')
             find_anything = False
-            limit = 0
+            list_of_dishes = []
 
             for country in countries:
                 with open(f'countries_cuisine/{country}', 'r', encoding='utf-8') as f:
@@ -433,13 +436,9 @@ def bot_message(message):
 
                 for count_of_dishes in range(len(text_json)):
                     if text_json[count_of_dishes]['name'].find(dish) != -1:
-                        if limit > 120:
-                            break
-                        markup_for_similar_dishes.add(types.KeyboardButton("🍽 " + text_json[count_of_dishes]['name']))
+                        list_of_dishes.append("🍽 " + text_json[count_of_dishes]['name'])
                         find_anything = True
-                        limit += 1
-                if limit > 120:
-                    break
+
 
             for category in categories:
                 with open(f'categories_cuisine/{category}', 'r', encoding='utf-8') as f:
@@ -447,22 +446,23 @@ def bot_message(message):
 
                 for count_of_dishes in range(len(text_json)):
                     if text_json[count_of_dishes]['name'].find(dish) != -1:
-                        if limit > 120:
-                            break
-                        markup_for_similar_dishes.add(
-                            types.KeyboardButton("🍽 " + text_json[count_of_dishes]['name']))
+                        list_of_dishes.append("🍽 " + text_json[count_of_dishes]['name'])
                         find_anything = True
-                        limit += 1
-                if limit > 120:
-                    break
 
             if find_anything == True:
+                list_of_dishes = list(set(list_of_dishes))
+                for _ in range(0, 118):
+                    markup_for_similar_dishes.add(types.KeyboardButton(random.choice(list_of_dishes)))
                 markup_for_similar_dishes.add(types.KeyboardButton('🔙 Нaзaд'))
                 dict_users_last_list_of_dishes[str(message.chat.id)] = markup_for_similar_dishes
                 bot.send_message(message.chat.id, '✅ По запросу нашел следующие блюда:',
                                  reply_markup=markup_for_similar_dishes)
             else:
+                stic = open('stic/cry.webp', 'rb')
                 bot.send_message(message.chat.id, '❌ Извините, я вас не понимаю')
+                bot.send_sticker(message.chat.id, stic)
+                stic.close()
+
 
 
 def user_gender(message):
@@ -524,13 +524,13 @@ def user_age(message):
                                 types.KeyboardButton('Очень высокий'))
             msg = bot.send_message(message.chat.id,
                                    '<b>Степень физической активности</b>: \n\t\t<b>1. Минимальный уровень</b>: Для '
-                                   'малоподвижных людей, тренировок мало или они отсутствуют\n\t\t '
+                                   'малоподвижных людей, тренировок мало или они отсутствуют\n\t\t'
                                    '<b>2. Низкий уровень</b>: Для людей с низкой активностью, легкие тренировки 1-3 '
-                                   'раза в неделю или в виде эквивалента другой активности.\n\t\t '
+                                   'раза в неделю или в виде эквивалента другой активности.\n\t\t'
                                    '<b>3. Средний уровень</b>: Для умеренно активных людей: физическая работа средней '
-                                   'тяжести или регулярные тренировки 3-5 дней в неделю.\n\t\t '
+                                   'тяжести или регулярные тренировки 3-5 дней в неделю.\n\t\t'
                                    '<b>4. Высокий уровень</b>: Для очень активных людей: физическая работа полный '
-                                   'день или интенсивные тренировки 6-7 раз в неделю.\n\t\t '
+                                   'день или интенсивные тренировки 6-7 раз в неделю.\n\t\t'
                                    '<b>5. Очень высокий</b>: Для предельно активных людей: тяжелая физическая работа '
                                    'и интенсивные тренировки/занятия спортом.',
                                    reply_markup=markup_activity, parse_mode='html')
@@ -663,7 +663,11 @@ def add_ingredient(message):
         dict_users_last_list_of_dishes[str(message.chat.id)] = markup_find_dishes
         bot.send_message(message.chat.id, '✅ Нашел следующие блюда', reply_markup=markup_find_dishes)
     else:
+        stic = open('stic/cry.webp', 'rb')
         bot.send_message(message.chat.id, '❌ По вашему запросу ничего не нашел')
+        bot.send_sticker(message.chat.id, stic)
+        stic.close()
+
 
 
 def return_markup_for_help():
