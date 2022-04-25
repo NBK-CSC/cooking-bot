@@ -3,3 +3,5 @@ __pycache__/
 countries_cuisine/
 categories_cuisine/
 logs/
+activity/
+users_param.json
