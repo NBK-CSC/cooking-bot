@@ -347,7 +347,7 @@ def bot_message(message):
                               str(fat) + ' жиров\n➔\t' + str(carbohydrate) + ' углеводов'
         stic = open('stic/apetit.webp', 'rb')
         markup_for_add_at_diary = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-        markup_for_add_at_diary.add(types.KeyboardButton('🔙 Вернуться к главному меню'), types.KeyboardButton('🔙 Вернуться к списку блюд'))
+        markup_for_add_at_diary.add(types.KeyboardButton('🔙 Вернуться к главному меню'))
         bot.send_message(message.chat.id, text_for_ingredients, parse_mode='html')
         bot.send_message(message.chat.id, cook_time, parse_mode='html')
         bot.send_message(message.chat.id, text_for_cooking_instruction, parse_mode='html')
