@@ -2,3 +2,5 @@ git+https://github.com/eternnoir/pyTelegramBotAPI.git
 lxml
 requests
 beautifulsoup4
+fake-useragent
+aiohttp
