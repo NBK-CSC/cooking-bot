@@ -1,12 +1,11 @@
 import random
 import telebot
 from telebot import types
-import config
 import os
 import json
 from datetime import datetime
 
-bot = telebot.TeleBot(config.TOKEN, parse_mode=None)
+bot = telebot.TeleBot('5094940461:AAE-WmWZTgO6TqaZoK_L8aDKtcLPid_Iook', parse_mode=None)
 
 LIST_OF_POPULAR_COUNTRIES = ['🇹🇭 Тайланд', '🇹🇷 Турция', '🇮🇳 Индия', '🇯🇵 Япония', '🇫🇷 Франция', '🇪🇸 Испания',
                              '🇮🇹 Италия',
@@ -47,7 +46,7 @@ if __name__ == "__main__":
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    check_users_activity(message.chat.id)
+    check_users_activity(message.chat.id, message.from_user.first_name)
     stic = open('stic/hello.webp', 'rb')
     bot.send_message(message.chat.id, "{0.first_name}, вас приветствует бот Шеф-Повар 👨‍🍳".format(message.from_user))
     bot.send_sticker(message.chat.id, stic)
@@ -57,7 +56,7 @@ def start(message):
 
 @bot.message_handler(commands=['help'])
 def help(message):
-    check_users_activity(message.chat.id)
+    check_users_activity(message.chat.id, message.from_user.first_name)
     bot.send_message(message.chat.id, 'У бота есть три категории:\n\n\t<b>1. Готовка блюд</b> 🥘\n➔\tТут вы можете '
                                       'найти различные '
                                       'рецепты блюд и способы их приготовления.\n\n\t<b>2. Дневник калорий</b> '
@@ -70,7 +69,7 @@ def help(message):
 
 @bot.message_handler(content_types=['text'])
 def bot_message(message):
-    check_users_activity(message.chat.id)
+    check_users_activity(message.chat.id, message.from_user.first_name)
     if message.text == '🥘 Готовка блюд':
         bot.send_message(message.chat.id,
                          'Готовка блюд имеет следущие функции:\n\n\t<b>1. Поиск блюда</b> 🍴\n➔\tТут вы можете '
@@ -721,7 +720,7 @@ def return_markup_for_categories():
     return markup_for_categories
 
 
-def check_users_activity(id):
+def check_users_activity(id, name):
     now = datetime.now()
     if not os.path.isdir('activity'):
         os.mkdir('activity')
@@ -731,7 +730,7 @@ def check_users_activity(id):
     with open(f'activity/{now.date()}.txt', 'r+', encoding='utf-8') as file:
         info = file.read()
         if not (str(id) in info):
-            file.write(f"{id}\n")
+            file.write(f"{id} - {name}\n")
 
 
 bot.infinity_polling()
