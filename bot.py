@@ -22,7 +22,6 @@ LIST_OF_CATEGORIES = ['🥐 Выпечка и десерты', '🍲 Основ�
 ACTIVITY_LEVELS = {'Минимальный уровень': 1.2, 'Низкий уровень': 1.375, 'Средний уровень': 1.55,
                    'Высокий уровень': 1.725, 'Очень высокий': 1.9}
 
-now = datetime.now()
 dict_of_users_category = {}
 dict_of_users_kitchen = {}
 dict_of_last_dish_users = {}
@@ -347,7 +346,7 @@ def bot_message(message):
                               str(fat) + ' жиров\n➔\t' + str(carbohydrate) + ' углеводов'
         stic = open('stic/apetit.webp', 'rb')
         markup_for_add_at_diary = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-        markup_for_add_at_diary.add(types.KeyboardButton('🔙 Вернуться к главному меню'))
+        markup_for_add_at_diary.add(types.KeyboardButton('🔙 Вернуться к списку блюд'), types.KeyboardButton('🔙 Вернуться к главному меню'))
         bot.send_message(message.chat.id, text_for_ingredients, parse_mode='html')
         bot.send_message(message.chat.id, cook_time, parse_mode='html')
         bot.send_message(message.chat.id, text_for_cooking_instruction, parse_mode='html')
@@ -723,6 +722,7 @@ def return_markup_for_categories():
 
 
 def check_users_activity(id):
+    now = datetime.now()
     if not os.path.isdir('activity'):
         os.mkdir('activity')
     if not os.path.exists(f'activity/{now.date()}.txt'):
