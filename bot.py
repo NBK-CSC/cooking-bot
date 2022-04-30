@@ -1,4 +1,6 @@
 import random
+import re
+
 import telebot
 from telebot import types
 import os
@@ -130,7 +132,6 @@ def bot_message(message):
         markup_dishes_of_the_selected_country_dishes = types.ReplyKeyboardMarkup(one_time_keyboard=True,
                                                                                  resize_keyboard=True)
         markup_for_copy = types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
-        markup_dishes_of_the_selected_country_dishes.add(types.KeyboardButton('🔄 Обновить список блюд'))
 
         dict_of_users_category[str(message.chat.id)] = category
         dict_of_users_kitchen[str(message.chat.id)] = ''
@@ -149,6 +150,7 @@ def bot_message(message):
                     list_of_dishes.append("🍽 " + text_json[count_of_dishes]['name'])
 
                 if limit > 120:
+                    markup_dishes_of_the_selected_country_dishes.add(types.KeyboardButton('🔄 Обновить список блюд'))
                     for _ in range(0, 118):
                         rand_dish = random.choice(list_of_dishes)
                         markup_dishes_of_the_selected_country_dishes.add(types.KeyboardButton(rand_dish))
@@ -173,7 +175,6 @@ def bot_message(message):
         markup_dishes_of_the_selected_country_dishes = types.ReplyKeyboardMarkup(one_time_keyboard=True,
                                                                                  resize_keyboard=True)
         markup_for_copy = types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
-        markup_dishes_of_the_selected_country_dishes.add(types.KeyboardButton('🔄 Обновить список блюд'))
         list_of_countries = os.listdir('countries_cuisine')
         limit = 0
         find_it = False
@@ -190,6 +191,7 @@ def bot_message(message):
                     list_of_dishes.append("🍽 " + text_json[count_of_dishes]['name'])
 
                 if limit > 120:
+                    markup_dishes_of_the_selected_country_dishes.add(types.KeyboardButton('🔄 Обновить список блюд'))
                     for _ in range(0, 118):
                         rand_dish = random.choice(list_of_dishes)
                         markup_dishes_of_the_selected_country_dishes.add(types.KeyboardButton(rand_dish))
@@ -420,7 +422,6 @@ def bot_message(message):
             markup_dishes_of_the_selected_country_dishes = types.ReplyKeyboardMarkup(one_time_keyboard=True,
                                                                                      resize_keyboard=True)
             markup_for_copy = types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
-            markup_dishes_of_the_selected_country_dishes.add(types.KeyboardButton('🔄 Обновить список блюд'))
             dict_of_users_kitchen[str(message.chat.id)] = user_input
             dict_of_users_category[str(message.chat.id)] = ''
 
@@ -434,6 +435,7 @@ def bot_message(message):
             list_of_dishes = list(set(list_of_dishes))
 
             if limit > 120:
+                markup_dishes_of_the_selected_country_dishes.add(types.KeyboardButton('🔄 Обновить список блюд'))
                 for _ in range(0, 118):
                     rand_dish = random.choice(list_of_dishes)
                     markup_dishes_of_the_selected_country_dishes.add(types.KeyboardButton(rand_dish))
@@ -454,8 +456,7 @@ def bot_message(message):
 
         else:
             markup_for_similar_dishes = types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
-            dish = message.text
-            dish = dish[0].upper() + dish[1:]
+            dish = message.text.lower()
             dir_name = 'countries_cuisine'
             countries = os.listdir(dir_name)
             categories = os.listdir('categories_cuisine')
@@ -467,7 +468,10 @@ def bot_message(message):
                     text_json = json.load(f)
 
                 for count_of_dishes in range(len(text_json)):
-                    if text_json[count_of_dishes]['name'].find(dish) != -1:
+                    name_of_dish = text_json[count_of_dishes]['name'].lower()
+                    name_of_dish_only_letters = ' '.join(re.split(r'[\W\s]+', name_of_dish))
+                    print(name_of_dish_only_letters)
+                    if name_of_dish_only_letters.find(dish) != -1:
                         list_of_dishes.append("🍽 " + text_json[count_of_dishes]['name'])
                         find_anything = True
 
@@ -477,16 +481,22 @@ def bot_message(message):
                     text_json = json.load(f)
 
                 for count_of_dishes in range(len(text_json)):
-                    if text_json[count_of_dishes]['name'].find(dish) != -1:
+                    name_of_dish = text_json[count_of_dishes]['name'].lower()
+                    name_of_dish_only_letters = ' '.join(re.split(r'[\W\s]+', name_of_dish))
+                    print(name_of_dish_only_letters)
+                    if name_of_dish_only_letters.find(dish) != -1:
                         list_of_dishes.append("🍽 " + text_json[count_of_dishes]['name'])
                         find_anything = True
 
             if find_anything == True:
                 list_of_dishes = list(set(list_of_dishes))
                 for _ in range(0, 118):
-                    rand_dish = random.choice(list_of_dishes)
-                    markup_for_similar_dishes.add(types.KeyboardButton(rand_dish))
-                    list_of_dishes.remove(rand_dish)
+                    if list_of_dishes:
+                        rand_dish = random.choice(list_of_dishes)
+                        markup_for_similar_dishes.add(types.KeyboardButton(rand_dish))
+                        list_of_dishes.remove(rand_dish)
+                    else:
+                        break
                 markup_for_similar_dishes.add(types.KeyboardButton('🔙 Нaзaд'))
                 dict_users_last_list_of_dishes[str(message.chat.id)] = markup_for_similar_dishes
                 bot.send_message(message.chat.id, '✅ По запросу нашел следующие блюда:',
