@@ -544,13 +544,13 @@ def user_height(message):
 
 def user_weight(message):
     if message.text.isdigit():
-        if int(message.text) > 1 and int(message.text) < 545:
+        if int(message.text) > 20 and int(message.text) < 545:
             msg = bot.send_message(message.chat.id, "Введите свой возраст")
             dict_of_users_param.get(str(message.chat.id)).append(int(message.text))
             bot.register_next_step_handler(msg, user_age)
         else:
             msg = bot.send_message(message.chat.id, '❌ Не думаю, что вы столько весите 😉\n Введите еще раз')
-            bot.register_next_step_handler(msg, user_weight())
+            bot.register_next_step_handler(msg, user_weight)
     elif message.text == "/help":
         del dict_of_users_param[str(message.chat.id)]
         bot.send_message(message.chat.id, 'Вы вернулись к главному меню', reply_markup=return_markup_for_help())
