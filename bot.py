@@ -62,10 +62,7 @@ def help(message):
     bot.send_message(message.chat.id, 'У бота есть три категории:\n\n\t<b>1. Готовка блюд</b> 🥘\n➔\tТут вы можете '
                                       'найти различные '
                                       'рецепты блюд и способы их приготовления.\n\n\t<b>2. Дневник калорий</b> '
-                                      '📖\n➔\tТут вы можете узнать свою норму потребления калорий. После ввода ваших '
-                                      'параметров, бот запомнит вашу норму потребления калорий.\n\n\t<b>3. Обновление '
-                                      'дневника</b> 📝\n➔\tТут вы можете '
-                                      'обновить ваш дневник калорий, изменив информацию о параметрах вашего тела.',
+                                      '📖\n➔\tВ зависимости от параметров вашего тела, бот выведет информацию о вашей суточной норме калорий',
                      reply_markup=return_markup_for_help(), parse_mode="html")
 
 
@@ -91,6 +88,13 @@ def bot_message(message):
                          reply_markup=return_markup_for_kitchens_wolrd(),
                          parse_mode='html')
         dict_of_users_category[str(message.chat.id)] = ''
+
+    elif message.text == '📖 Дневник калорий':
+        bot.send_message(message.chat.id, 'Дневник калорий имеет следущие функции: \n\n\t<b>1. Суточная норма калорий </b> 📖\n➔\tТут вы можете '
+                         'узнать суточную норму калорий, а также количество калорий необходимое для похудения или набора массы.\n\n\t<b>2. Обновление параметров</b> '
+                         '📝\n➔\tТут вы сможете изменить значения параметров вашего тела.',
+                         reply_markup=return_markup_for_diary(),
+                         parse_mode='html')
 
     elif message.text == '🍳 Категории блюд':
         bot.send_message(message.chat.id, '🍳 Список категорий блюд', reply_markup=return_markup_for_categories(),
@@ -289,7 +293,7 @@ def bot_message(message):
             bot.send_message(message.chat.id, '🔄 Обновляю список блюд...',
                              reply_markup=markup_dishes_of_the_selected_country_dishes)
 
-    elif message.text == '🔙 Вернуться к списку блюд':
+    elif message.text == '📃 Вернуться к списку блюд':
         markup = dict_users_last_list_of_dishes[str(message.chat.id)]
         bot.send_message(message.chat.id, '📃 Список блюд:', reply_markup=markup)
 
@@ -344,49 +348,46 @@ def bot_message(message):
                     if found_dish:
                         break
 
-        if text_json[count_of_dishes]['cook_time'] != 0:
-            cook_time = "<b>2. Время приготовления и кол-во порций</b> 🕖\n➔ " + text_json[count_of_dishes][
-                'cook_time'] + "\n➔ " + str(text_json[count_of_dishes]['servings_count']) + " порции"
         ingredients = text_json[count_of_dishes]['ingredients']
         list_of_cooking_instuction = text_json[count_of_dishes]['cooking_instructions']
         calories = text_json[count_of_dishes]['calories']
         protein = text_json[count_of_dishes]['protein']
         fat = text_json[count_of_dishes]['fat']
         carbohydrate = text_json[count_of_dishes]['carbohydrate']
-        text_for_cooking_instruction = '<b>3. Шаги приготовления</b> 👣\n'
-        text_for_ingredients = '<b>1. Ингредиенты</b> 🧂\n'
+        text = ''
 
-        dict_of_last_dish_users[message.chat.id] = int(calories)
-
-        for steps in list_of_cooking_instuction:
-            text_for_cooking_instruction += '➔\t' + steps
-            text_for_cooking_instruction += '\n'
-
+        text += '<b>1. Ингредиенты</b> 🧂\n'
         for step, ingredient in enumerate(ingredients):
-            text_for_ingredients += '➔\t' + ingredient[0] + ': ' + ingredient[1] + '\n'
+            text += '➔\t' + ingredient[0] + ': ' + ingredient[1] + '\n'
 
-        text_about_calories = '<b>4. Энергетическая ценность</b> 📄\n➔\t' + str(calories) + ' ккал\n➔\t' + \
+        if text_json[count_of_dishes]['cook_time'] != 0:
+            text += "\n<b>2. Время приготовления и кол-во порций</b> 🕖\n➔ " + text_json[count_of_dishes][
+                'cook_time'] + "\n➔ " + str(text_json[count_of_dishes]['servings_count']) + " порции\n"
+
+        text += '\n<b>3. Шаги приготовления</b> 👣\n'
+        for steps in list_of_cooking_instuction:
+            text += '➔\t' + steps
+            text += '\n'
+
+        text += '\n<b>4. Энергетическая ценность</b> 📄\n➔\t' + str(calories) + ' ккал\n➔\t' + \
                               str(protein) + ' белков\n➔' \
                                              '\t' + \
                               str(fat) + ' жиров\n➔\t' + str(carbohydrate) + ' углеводов'
+
+        dict_of_last_dish_users[message.chat.id] = int(calories)
+
         stic = open('stic/apetit.webp', 'rb')
         markup_for_add_at_diary = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-        markup_for_add_at_diary.add(types.KeyboardButton('🔙 Вернуться к списку блюд'), types.KeyboardButton('🔙 Вернуться к главному меню'))
-        bot.send_message(message.chat.id, text_for_ingredients, parse_mode='html')
-        bot.send_message(message.chat.id, cook_time, parse_mode='html')
-        bot.send_message(message.chat.id, text_for_cooking_instruction, parse_mode='html')
-        bot.send_message(message.chat.id, text_about_calories, parse_mode='html', reply_markup=markup_for_add_at_diary)
+        markup_for_add_at_diary.add(types.KeyboardButton('📃 Вернуться к списку блюд'), types.KeyboardButton('🔙 Вернуться к главному меню'))
+        bot.send_message(message.chat.id, text, parse_mode='html', reply_markup=markup_for_add_at_diary)
         bot.send_message(message.chat.id, "Приятного аппетита!")
         bot.send_sticker(message.chat.id, stic)
         stic.close()
         dict_of_users_category[str(message.chat.id)] = ''
         dict_of_users_kitchen[str(message.chat.id)] = ''
 
-    elif message.text == '📖 Дневник калорий':
+    elif message.text == '📖 Суточная норма калорий':
         if str(message.chat.id) in dict_of_users_param:
-            markup_for_add_calories = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-            markup_for_add_calories.add(types.KeyboardButton('Добавить калории'),
-                                        types.KeyboardButton('Обнулить калории'), types.KeyboardButton('🔙 Назад'))
             basal_metabolism_for_send = f'<b>{dict_of_users_param.get(str(message.chat.id))[5]} ккал/сутки</b>. Это ваш <b>базовый метаболизм</b> (основной обмен). Это калории, которые сжигаются, когда вы находитесь в покое, и энергия тратится на обеспечение процессов дыхания, кровообращения, поддержание температуры тела и т.д.'
             normal_calories_for_send = f'<b>{dict_of_users_param.get(str(message.chat.id))[6]} ккал/сутки</b>. Ваша <b>норма калорий</b> для поддержания веса с текущей физической активностью (вы не худеете и не набираете вес)'
             bot.send_message(message.chat.id, basal_metabolism_for_send, parse_mode='html')
@@ -399,7 +400,7 @@ def bot_message(message):
                                                     'данные.\nВаш пол:', reply_markup=markup_gender)
             bot.register_next_step_handler(msg, user_gender)
 
-    elif message.text == '📝 Обновление дневника':
+    elif message.text == '📝 Обновление параметров':
         markup_gender = types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
         markup_gender.add(types.KeyboardButton('🙋‍♂️ Мужской'), types.KeyboardButton('🙋‍♀️ Женский'))
 
@@ -660,7 +661,7 @@ def add_ingredient(message):
                     find_it = False
                     break
                 for ingredient_of_dishes in mass_of_ingredients:
-                    if ingredient.lower() in ingredient_of_dishes.lower():
+                    if ingredient[:-1].lower() in ingredient_of_dishes.lower():
                         coincidence += 1
                         if coincidence == len(dict_of_users_ingredients.get(str(message.chat.id))):
                             list_of_dishes.append("🍽 " + dishes['name'])
@@ -696,7 +697,7 @@ def add_ingredient(message):
     print(list_of_dishes)
 
     if list_of_dishes != []:
-        for _ in range(0, 115):
+        for _ in range(0, 100):
             if list_of_dishes == []:
                 break
             random_dish = random.choice(list_of_dishes)
@@ -718,10 +719,15 @@ def return_markup_for_help():
     markup_for_help = types.ReplyKeyboardMarkup(resize_keyboard=True)
     item1 = types.KeyboardButton('🥘 Готовка блюд')
     item2 = types.KeyboardButton('📖 Дневник калорий')
-    item3 = types.KeyboardButton('📝 Обновление дневника')
-    markup_for_help.add(item1, item2, item3)
+    markup_for_help.add(item1, item2)
     return markup_for_help
 
+def return_markup_for_diary():
+    markup_for_diary = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    item1 = types.KeyboardButton('📖 Суточная норма калорий')
+    item2= types.KeyboardButton('📝 Обновление параметров')
+    markup_for_diary.add(item1, item2)
+    return markup_for_diary
 
 def return_markup_for_cooking():
     markup_for_cooking_dishes = types.ReplyKeyboardMarkup(resize_keyboard=True)
