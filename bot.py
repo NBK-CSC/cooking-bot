@@ -661,12 +661,20 @@ def add_ingredient(message):
                     find_it = False
                     break
                 for ingredient_of_dishes in mass_of_ingredients:
-                    if ingredient[:-1].lower() in ingredient_of_dishes.lower():
-                        coincidence += 1
-                        if coincidence == len(dict_of_users_ingredients.get(str(message.chat.id))):
-                            list_of_dishes.append("🍽 " + dishes['name'])
-                            find_it = True
-                        break
+                    if len(ingredient) > 3:
+                        if ingredient[:-1].lower() in ingredient_of_dishes.lower():
+                            coincidence += 1
+                            if coincidence == len(dict_of_users_ingredients.get(str(message.chat.id))):
+                                list_of_dishes.append("🍽 " + dishes['name'])
+                                find_it = True
+                            break
+                    else:
+                        if ingredient.lower() in ingredient_of_dishes.lower():
+                            coincidence += 1
+                            if coincidence == len(dict_of_users_ingredients.get(str(message.chat.id))):
+                                list_of_dishes.append("🍽 " + dishes['name'])
+                                find_it = True
+                            break
             mass_of_ingredients = []
 
     mass_of_ingredients = []
@@ -725,8 +733,9 @@ def return_markup_for_help():
 def return_markup_for_diary():
     markup_for_diary = types.ReplyKeyboardMarkup(resize_keyboard=True)
     item1 = types.KeyboardButton('📖 Суточная норма калорий')
-    item2= types.KeyboardButton('📝 Обновление параметров')
-    markup_for_diary.add(item1, item2)
+    item2 = types.KeyboardButton('📝 Обновление параметров')
+    item3 = types.KeyboardButton('🔙 Назад')
+    markup_for_diary.add(item1, item2, item3)
     return markup_for_diary
 
 def return_markup_for_cooking():
