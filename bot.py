@@ -298,6 +298,8 @@ def bot_message(message):
         bot.send_message(message.chat.id, '📃 Список блюд:', reply_markup=markup)
 
     elif message.text[:2] == '🍽 ':
+        waiting_dish = bot.send_message(message.chat.id, 'Спрашиваем у повара 👨‍🍳')
+        waiting_dish
         if message.chat.id in dict_of_last_dish_users:
             pass
         else:
@@ -378,6 +380,7 @@ def bot_message(message):
 
         stic = open('stic/apetit.webp', 'rb')
         markup_for_add_at_diary = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+        bot.delete_message(message.chat.id, waiting_dish.message_id)
         markup_for_add_at_diary.add(types.KeyboardButton('📃 Вернуться к списку блюд'), types.KeyboardButton('🔙 Вернуться к главному меню'))
         bot.send_message(message.chat.id, text, parse_mode='html', reply_markup=markup_for_add_at_diary)
         bot.send_message(message.chat.id, "Приятного аппетита!")
@@ -456,6 +459,8 @@ def bot_message(message):
                              reply_markup=markup_dishes_of_the_selected_country_dishes)
 
         else:
+            search_dish = bot.send_message(message.chat.id, 'Ищем блюда для Вас...')
+            search_dish
             markup_for_similar_dishes = types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
             dish = message.text.lower()
             dir_name = 'countries_cuisine'
@@ -500,11 +505,13 @@ def bot_message(message):
                         break
                 markup_for_similar_dishes.add(types.KeyboardButton('🔙 Нaзaд'))
                 dict_users_last_list_of_dishes[str(message.chat.id)] = markup_for_similar_dishes
+                bot.delete_message(message.chat.id, search_dish.message_id)
                 bot.send_message(message.chat.id, '✅ По запросу нашел следующие блюда:',
                                  reply_markup=markup_for_similar_dishes)
             else:
+                bot.delete_message(message.chat.id, search_dish.message_id)
                 stic = open('stic/cry.webp', 'rb')
-                bot.send_message(message.chat.id, '❌ Извините, я вас не понимаю')
+                bot.send_message(message.chat.id, '❌ Извините, по вашему запросу блюдо не найдено')
                 bot.send_sticker(message.chat.id, stic)
                 stic.close()
 
@@ -632,6 +639,11 @@ def add_paramaters_at_json(dict):
 
 
 def add_ingredient(message):
+    if message.text == "/help":
+        bot.send_message(message.chat.id, 'Вы вернулись к главному меню', reply_markup=return_markup_for_help())
+        return
+    search_dish = bot.send_message(message.chat.id, 'Ищем блюда для Вас...')
+    search_dish
     markup_find_dishes = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
     list_of_dishes = []
     ingredients = message.text.split(",")
@@ -714,12 +726,15 @@ def add_ingredient(message):
 
         markup_find_dishes.add(types.KeyboardButton("🔙 Нaзaд"))
         dict_users_last_list_of_dishes[str(message.chat.id)] = markup_find_dishes
+        bot.delete_message(message.chat.id, search_dish.message_id)
         bot.send_message(message.chat.id, '✅ Нашел следующие блюда', reply_markup=markup_find_dishes)
     else:
         stic = open('stic/cry.webp', 'rb')
-        bot.send_message(message.chat.id, '❌ По вашему запросу ничего не нашел')
+        bot.delete_message(message.chat.id, search_dish.message_id)
+        msg = bot.send_message(message.chat.id, '❌ По вашему запросу ничего не нашел. Можете ввести другие ингредиенты')
         bot.send_sticker(message.chat.id, stic)
         stic.close()
+        bot.register_next_step_handler(msg, add_ingredient)
 
 
 
