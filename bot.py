@@ -1,13 +1,13 @@
 import random
 import re
-
+import config
 import telebot
 from telebot import types
 import os
 import json
 from datetime import datetime
 
-bot = telebot.TeleBot('5094940461:AAE-WmWZTgO6TqaZoK_L8aDKtcLPid_Iook', parse_mode=None)
+bot = telebot.TeleBot(config.token, parse_mode=None)
 
 LIST_OF_POPULAR_COUNTRIES = ['🇹🇭 Тайланд', '🇹🇷 Турция', '🇮🇳 Индия', '🇯🇵 Япония', '🇫🇷 Франция', '🇪🇸 Испания',
                              '🇮🇹 Италия',
