@@ -496,7 +496,7 @@ def bot_message(message):
 
             if find_anything == True:
                 list_of_dishes = list(set(list_of_dishes))
-                for _ in range(0, 118):
+                for _ in range(0, 100):
                     if list_of_dishes:
                         rand_dish = random.choice(list_of_dishes)
                         markup_for_similar_dishes.add(types.KeyboardButton(rand_dish))
