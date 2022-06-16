@@ -21,10 +21,9 @@ headers = {
     "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
 }
 
-NOW = datetime.now().strftime("%d-%m-%Y")
-
-
 def write_logs(data):
+    global NOW
+    NOW = datetime.now().strftime("%d-%m-%Y")
     create_folder('logs')
     with open(f"logs\\{NOW}.txt", 'a+') as file:
         file.write(data)
@@ -35,7 +34,8 @@ async def get_data_about_dish(url, session, dishes, retry=5):
     try:
         async with session.get(url=url, headers=headers) as response:
             soup = BeautifulSoup(await response.text(), 'lxml')
-            name = soup.find(class_="emotion-gl52ge").text.strip().replace("\xa0", " ")
+            name = soup.find(class_="emotion-gl52ge")
+            url_image=soup.find("img", class_="emotion-hsr74c")
             cook_time = soup.find('div', class_='emotion-my9yfq')
             servings_count = soup.find('span', itemprop='recipeYield')
             calories = soup.find('span', itemprop="calories")
@@ -60,8 +60,9 @@ async def get_data_about_dish(url, session, dishes, retry=5):
                 ingredients.append([parse_ingredients[i].text.strip(), count_ingredients[i].text.strip()])
 
             dishes.append({
-                "name": name,
+                "name": name.text.strip().replace("\xa0", " "),
                 "url": url,
+                "url_image": url_image["src"] if url_image is not None else 0,
                 "category": category.text.strip() if category is not None else 0,
                 "country": country.text.strip() if country is not None else 0,
                 "cook_time": cook_time.text.strip() if cook_time is not None else 0,
