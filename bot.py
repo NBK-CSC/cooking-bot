@@ -5,6 +5,8 @@ import telebot
 from telebot import types
 import os
 import json
+from PIL import Image
+from urllib.request import urlopen
 from datetime import datetime
 
 bot = telebot.TeleBot(config.token, parse_mode=None)
@@ -357,6 +359,7 @@ def bot_message(message):
         fat = text_json[count_of_dishes]['fat']
         carbohydrate = text_json[count_of_dishes]['carbohydrate']
         text = ''
+        url = text_json[count_of_dishes]['url_image']
 
         text += '<b>1. Ингредиенты</b> 🧂\n'
         for step, ingredient in enumerate(ingredients):
@@ -378,11 +381,15 @@ def bot_message(message):
 
         dict_of_last_dish_users[message.chat.id] = int(calories)
 
+        if url != 0:
+            photo = Image.open(urlopen(url))
         stic = open('stic/apetit.webp', 'rb')
         markup_for_add_at_diary = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
         bot.delete_message(message.chat.id, waiting_dish.message_id)
         markup_for_add_at_diary.add(types.KeyboardButton('📃 Вернуться к списку блюд'), types.KeyboardButton('🔙 Вернуться к главному меню'))
         bot.send_message(message.chat.id, text, parse_mode='html', reply_markup=markup_for_add_at_diary)
+        if url != 0:
+            bot.send_photo(message.chat.id, photo)
         bot.send_message(message.chat.id, "Приятного аппетита!")
         bot.send_sticker(message.chat.id, stic)
         stic.close()
@@ -809,4 +816,4 @@ def check_users_activity(id, name):
             file.write(f"{id} - {name}\n")
 
 
-bot.infinity_polling()
+bot.infinity_polling(timeout=10, long_polling_timeout=5)
