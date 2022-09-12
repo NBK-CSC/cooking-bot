@@ -61,7 +61,7 @@ def start(message):
 @bot.message_handler(commands=['help'])
 def help(message):
     check_users_activity(message.chat.id, message.from_user.first_name)
-    bot.send_message(message.chat.id, 'У бота есть три категории:\n\n\t<b>1. Готовка блюд</b> 🥘\n➔\tТут вы можете '
+    bot.send_message(message.chat.id, 'У бота есть две категории:\n\n\t<b>1. Готовка блюд</b> 🥘\n➔\tТут вы можете '
                                       'найти различные '
                                       'рецепты блюд и способы их приготовления.\n\n\t<b>2. Дневник калорий</b> '
                                       '📖\n➔\tВ зависимости от параметров вашего тела, бот выведет информацию о вашей суточной норме калорий',
@@ -80,7 +80,9 @@ def bot_message(message):
                          '"Русская".\n\n\t<b>3. Категории блюд</b> 🍳\n➔\tТут вы можете '
                          'найти блюда по категориям.\n\n\t<b>4. Поиск по '
                          'ингредиентам</b> 🧄\n➔\tТут вы можете ввести ингредиенты, и бот подберет '
-                         'для вас блюдо состоящее из них.',
+                         'для вас блюдо состоящее из них.\n\n\t<b>5. Случайное блюдо '
+                         '</b> \n➔\tТут вам бот выведет рандомное блюдо'
+                         ,
                          reply_markup=return_markup_for_cooking(),
                          parse_mode='html')
 
@@ -112,8 +114,8 @@ def bot_message(message):
         dict_of_users_ingredients[str(message.chat.id)] = []
         bot.register_next_step_handler(msg, add_ingredient)
 
-    elif message.text == '🔙 Назад' or message.text == '🔙 Вернуться к главному меню':
-        bot.send_message(message.chat.id, text='Вы вернулись к главному меню', reply_markup=return_markup_for_help())
+    # elif message.text == '🔙 Назад' or message.text == '🔙 Вернуться к главному меню':
+    #     bot.send_message(message.chat.id, text='Вы вернулись к главному меню', reply_markup=return_markup_for_help())
 
     elif message.text == '🔙 Нaзaд':
         bot.send_message(message.chat.id, text='Вы вернулись к меню категорий',
@@ -148,6 +150,10 @@ def bot_message(message):
         for category_cuisine in list_of_categories:
             if category == category_cuisine[0:len(category_cuisine) - 5]:
                 find_it = True
+                if category == "Сэндвичи":
+                    category = "Супы"
+                elif category == "Супы":
+                    category = "Сэндвичи"
                 with open(f'categories_cuisine/{category}.json', 'r', encoding='utf-8') as f:
                     text_json = json.load(f)
 
@@ -469,7 +475,7 @@ def bot_message(message):
             search_dish = bot.send_message(message.chat.id, 'Ищем блюда для Вас...')
             search_dish
             markup_for_similar_dishes = types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
-            dish = message.text.lower()
+            dish = message.text
             dir_name = 'countries_cuisine'
             countries = os.listdir(dir_name)
             categories = os.listdir('categories_cuisine')
@@ -559,13 +565,13 @@ def user_height(message):
 
 def user_weight(message):
     if message.text.isdigit():
-        if int(message.text) > 20 and int(message.text) < 545:
-            msg = bot.send_message(message.chat.id, "Введите свой возраст")
-            dict_of_users_param.get(str(message.chat.id)).append(int(message.text))
-            bot.register_next_step_handler(msg, user_age)
-        else:
-            msg = bot.send_message(message.chat.id, '❌ Не думаю, что вы столько весите 😉\n Введите еще раз')
-            bot.register_next_step_handler(msg, user_weight)
+        # if int(message.text) > 20 and int(message.text) < 545:
+        msg = bot.send_message(message.chat.id, "Введите свой возраст")
+        dict_of_users_param.get(str(message.chat.id)).append(int(message.text))
+        bot.register_next_step_handler(msg, user_age)
+        # else:
+        #     msg = bot.send_message(message.chat.id, '❌ Не думаю, что вы столько весите 😉\n Введите еще раз')
+        #     bot.register_next_step_handler(msg, user_weight)
     elif message.text == "/help":
         del dict_of_users_param[str(message.chat.id)]
         bot.send_message(message.chat.id, 'Вы вернулись к главному меню', reply_markup=return_markup_for_help())
@@ -654,6 +660,7 @@ def add_ingredient(message):
     markup_find_dishes = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
     list_of_dishes = []
     ingredients = message.text.split(",")
+    ingredients.pop(-1)
     for i in range(0, len(ingredients)):
         if ingredients[i][0] == " ":
             ingredients[i] = ingredients[i][1:]
@@ -766,8 +773,9 @@ def return_markup_for_cooking():
     item2 = types.KeyboardButton('🗺 Кухни мира')
     item3 = types.KeyboardButton('🍳 Категории блюд')
     item4 = types.KeyboardButton('🧄 Поиск по ингредиентам')
-    item5 = types.KeyboardButton('🔙 Назад')
-    markup_for_cooking_dishes.add(item1, item2, item3, item4, item5)
+    item5 = types.KeyboardButton('Случайное блюдо')
+    item6 = types.KeyboardButton('🔙 Назад')
+    markup_for_cooking_dishes.add(item1, item2, item3, item4, item5, item6)
     return markup_for_cooking_dishes
 
 

@@ -5,3 +5,4 @@ categories_cuisine/
 logs/
 activity/
 users_param.json
+config.py
